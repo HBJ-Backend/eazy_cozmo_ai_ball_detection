@@ -82,7 +82,7 @@ def load_model():
     if hasattr(pathlib, "PosixPath"):
         pathlib.PosixPath = pathlib.WindowsPath
     # --- Config ---
-    MODEL_PATH = "C:/Users/CS/eazy_cozmo_ai_ball_detection/easy_cozmo/yolov5/best_windows.pt"   # path to your trained YOLOv5-Nano model
+    MODEL_PATH = "C:/Users/CS/eazy_cozmo_ai_ball_detection/easy_cozmo/best_windows.pt"   # path to your trained YOLOv5-Nano model
     # Load the YOLOv5 model
     model = yolov5.load(MODEL_PATH)
     return model
