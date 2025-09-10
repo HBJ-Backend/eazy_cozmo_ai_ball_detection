@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 # ---- USER DETAILS  ----
 $Username = $env:USERNAME
 $UserDir  = "C:\Users\$Username"
-$CozmoDir = "$UserDir\easy_cozmo"
+$CozmoDir = "$UserDir\eazy_cozmo_ai_ball_detection"
 $Desktop  = "$UserDir\Desktop"
 
 
@@ -67,11 +67,11 @@ Write-Host ">>> Installation successful."
 if (!(Test-Path $CozmoDir)) {
     Write-Host ">>> Cloning easy_cozmo repository !!"
     Set-Location $UserDir
-    git clone https://github.com/EduardoFF/easy_cozmo.git
+    git clone https://github.com/HBJ-Backend/eazy_cozmo_ai_ball_detection.git
 }
 Set-Location $CozmoDir
 git fetch
-git checkout cozmoball
+git checkout main
 
 
 # ----------------------------------------------------------
