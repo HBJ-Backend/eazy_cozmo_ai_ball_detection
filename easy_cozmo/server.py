@@ -67,7 +67,6 @@ def handle_client(conn, addr, model):
                     if not line:
                         continue
 
-                    print(f"[SERVER] Received from {addr}: {line}")
                     result = detect_ball(line, model)
 
                     try:
@@ -107,3 +106,4 @@ def start_server(host='127.0.0.1', port=65432):
 
 if __name__ == "__main__":
     start_server()
+
