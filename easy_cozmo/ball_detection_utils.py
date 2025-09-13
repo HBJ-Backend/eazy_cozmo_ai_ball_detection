@@ -49,10 +49,6 @@ import cv2
 import imutils
 import numpy as np
 
-# import os
-# import uuid
-# from datetime import datetime
-
 def save_image(cvimage, folder="dataset", prefix="ball"):
     # Make sure the folder exists
     if not os.path.exists(folder):
@@ -74,55 +70,88 @@ def save_image(cvimage, folder="dataset", prefix="ball"):
 import cv2
 import pathlib
 
-# from yolov5 import YOLOv5
-import yolov5
-def load_model():
-    # print('load')
-    # --- Patch PosixPath for Windows ---
-    if hasattr(pathlib, "PosixPath"):
-        pathlib.PosixPath = pathlib.WindowsPath
-    # --- Config ---
-    MODEL_PATH = "C:/Users/CS/eazy_cozmo_ai_ball_detection/easy_cozmo/best_windows.pt"   # path to your trained YOLOv5-Nano model
-    # Load the YOLOv5 model
-    model = yolov5.load(MODEL_PATH)
-    return model
+def normalize_brightness(image_bgr):
+    hsv = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2HSV)
+    h, s, v = cv2.split(hsv)
+    
+    # Equalize brightness channel (v)
+    v_eq = cv2.equalizeHist(v)
 
-def detect_ball(frame, model, tag=True, conf_thresh=0.8  , **kwargs):
+    hsv_eq = cv2.merge((h, s, v_eq))
+    image_bgr_eq = cv2.cvtColor(hsv_eq, cv2.COLOR_HSV2BGR)
+    return image_bgr_eq
+
+
+def apply_clahe(image_bgr):
+    lab = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    # Apply CLAHE to L-channel
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    l_clahe = clahe.apply(l)
+
+    lab_clahe = cv2.merge((l_clahe, a, b))
+    image_bgr_clahe = cv2.cvtColor(lab_clahe, cv2.COLOR_LAB2BGR)
+    return image_bgr_clahe
+
+
+def adjust_gamma(image, gamma=1.5):
+    invGamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** invGamma) * 255
+                      for i in np.arange(256)]).astype("uint8")
+    return cv2.LUT(image, table)
+
+def preprocess_image_for_yolo(cvimage):
+    # Step 1: Normalize brightness (equalize V in HSV)
+    image = normalize_brightness(cvimage)
+
+    # Step 2: Apply CLAHE to enhance contrast
+    image = apply_clahe(image)
+
+    # Step 3: Optional - gamma correction
+    image = adjust_gamma(image, gamma=1.2)  # increase gamma to darken
+
+    return image
+
+import socket
+import json
+def detect_ball(frame, client, tag=True, conf_thresh=0.8  , **kwargs):
     # print('detect')
+    frame_processed = preprocess_image_for_yolo(frame)
+
+    # Save image to a temporary file
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+        temp_path = tmp.name
+        cv2.imwrite(temp_path, cv2.cvtColor(frame_processed, cv2.COLOR_RGB2BGR))
     try:
-        # Save image to a temporary file
-        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-            temp_path = tmp.name
-            cv2.imwrite(temp_path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-
-        # Run inference using the temp file
-        results = model(temp_path, size=256)
-
-        # Delete the temp file
-        os.remove(temp_path)
-
-        for det in results.xyxy[0]:  # detections for first image
-            x1, y1, x2, y2, conf, cls = det
-            # print('conf: ', conf)
-            radius = int(0.5 * max(x2 - x1, y2 - y1))
-            # print(x1,y1,x2,y2, conf)
-            if conf >= conf_thresh and radius < 80 and radius > 20:
-                cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
-                radius = int(0.5 * max(x2 - x1, y2 - y1))
+        host='127.0.0.1'
+        port=65432
+        results = client.send_image_path(temp_path)
+        if results:
+            data = results['results']
+            if data['detected']:
+                x1, y1, x2, y2, cx, cy, radius = data['x1'], data['y1'], data['x2'], data['y2'], data['cx'], data['cy'], data['radius']
 
                 if tag:
                     cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
                     cv2.circle(frame, (cx, cy), 2, (0, 0, 255), 3)
 
-                image_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                os.remove(temp_path)
+
                 return True, frame, (cx, cy), radius
-                
             else:
+                os.remove(temp_path)
+
                 return False, frame, None, None
 
-        return False, frame, None, None
+        else:
+            os.remove(temp_path)
+            return False, frame, None, None
+
+
     
     except Exception as e:
+        os.remove(temp_path)
         print(f"Detection error: {e}")
         return False, frame, None, None
 
