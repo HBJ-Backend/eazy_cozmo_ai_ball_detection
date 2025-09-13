@@ -215,6 +215,45 @@ class BallAnnotator(cozmo.annotate.Annotator):
                 text = cozmo.annotate.ImageText('DISTANCE %d \u00b0 ' % distance, color='green')
             text.render(d, bounds)
 
+# === CLIENT CLASS ===
+class BallDetectionClient:
+    def __init__(self, host='127.0.0.1', port=65432):
+        self.host = host
+        self.port = port
+        # self.timeout = timeout
+        self.socket = None
+        self.connect()
+
+    def connect(self):
+        try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # self.socket.settimeout(self.timeout)
+            self.socket.connect((self.host, self.port))
+            # print(f"[CLIENT] Connected to server at {self.host}:{self.port}")
+        except Exception as e:
+            print(f"[CLIENT] Connection failed: {e}")
+            self.socket = None
+
+    def send_image_path(self, image_path):
+        if not self.socket:
+            raise ConnectionError("Not connected to server.")
+        try:
+            image_path += '\n'
+            self.socket.sendall(image_path.encode('utf-8'))
+            data = self.socket.recv(1024)
+            result = json.loads(data.decode('utf-8'))
+            return result
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    def close(self):
+        if self.socket:
+            self.socket.close()
+            print("[CLIENT] Connection closed.")
+            self.socket = None
 
 class BallDetector:
     def __init__(self, robot, autoexposure=True):
@@ -227,7 +266,8 @@ class BallDetector:
         self.distance = None
         self.distances = []
         self.autoexposure_algo = None
-        self.model = load_model()
+        self.client = BallDetectionClient()
+        # self.model = load_model()
         self.frame_count = 0
         # self.detected_prev_frame = False
         if autoexposure:
@@ -257,14 +297,12 @@ class BallDetector:
         self.frame_count+=1
         if self.frame_count % 2 == 0:
 
-            detection  = detect_ball(cv2_image, self.model)
+            detection  = detect_ball(cv2_image, self.client)
 
 
         #Show the output
             if detection:
                 detected, proc_cv_image, center, rad = detection
-                # print('rad: ', rad)
-                # self._robot.remove_event_handler(cozmo.world.EvtNewCameraImage, self.on_img)
 
                 distance = None
                 if detected:
@@ -362,11 +400,11 @@ def _initialize_ball_detector():
 def is_stable_detection():
     norms = [np.linalg.norm(np.array([c[0],c[1]])) for c in _ball_detector.img_centers if c is not None]
     rads = np.array([r for r in _ball_detector.img_radius if r is not None])
-    # print("norms ",norms)
-    stddev=np.std(norms)
-    # print("stddev ",stddev)
-    # print('rad std: ', np.std(rads))
-    if len(norms) >= 2 and stddev < 50 and np.std(rads) < 5:
+    stddev = 0
+    stdrads = 0
+    if len(norms) > 1: stddev=np.std(norms)
+    if len(rads) > 1: stdrads = np.std(rads)
+    if len(norms) >= 2 and stddev < 50 and stdrads < 5:
         return True
     return False
 
@@ -419,6 +457,7 @@ def scan_for_ball(angle, scan_speed=_df_scan_ball_speed):
             print(e)
             traceback.print_exc()
             say_error("Scan for ball failed")
+    
     return is_stable_detection()
 
 def compute_hor_dev():
