@@ -24,7 +24,6 @@ _ball_detector = None
 _df_scan_ball_speed = 17#in degrees
 _at_home = False
 _ball_detection_initialized = False
-
 _post_marker_registered = False
 _is_marker_registered = False
 _marker_type = CustomObjectMarkers.Circles2
@@ -227,12 +226,14 @@ class BallDetector:
         self.distance = None
         self.distances = []
         self.autoexposure_algo = None
+        say('Loading Model. Please wait')
         self.model = load_model()
+        say('Model is ready')
         self.frame_count = 0
         # self.detected_prev_frame = False
-        if autoexposure:
-            print("Using autoexposure")
-            self.autoexposure_algo = AutoExposureAlgo(robot)
+        # if autoexposure:
+        #     print("Using autoexposure")
+        #     self.autoexposure_algo = AutoExposureAlgo(robot)
         self._robot.add_event_handler(cozmo.world.EvtNewCameraImage, self.on_img)
         self.anno = BallAnnotator(self)
         self._robot.world.image_annotator.add_annotator('balldetect', self.anno)
@@ -248,10 +249,10 @@ class BallDetector:
         cv2_image = cv.cvtColor(raw_rgb, cv.COLOR_RGB2BGR)
         height, width, channels = cv2_image.shape
         #print(height,width)
-        if self.autoexposure_algo is not None:
-            """ pass the current raw image in order to do
-            auto exposure (valid in the  next iteration)"""
-            self.autoexposure_algo.proc_image(raw_img)
+        # if self.autoexposure_algo is not None:
+        #     """ pass the current raw image in order to do
+        #     auto exposure (valid in the  next iteration)"""
+        #     self.autoexposure_algo.proc_image(raw_img)
 
 
         self.frame_count+=1
@@ -348,29 +349,34 @@ def _initialize_ball_detector():
     global _ball_detector
     robot = easy_cozmo._robot
     set_camera_for_ball()
-    robot.camera.set_manual_exposure(8,0.8)
+    # robot.camera.set_manual_exposure(8,0.8)
     _move_head(degrees(-11))
     #robot.set_head_angle(Angle(degrees=4)).wait_for_completed()
     _ball_detector = BallDetector(robot)
     tt = time.time()
-    while time.time() - tt < 5:
-        if _ball_detector.is_autoexposure_stabilized():
-            print("AUTOEXPOSURE STABILIZED")
-            break
-        time.sleep(.2)
+    # while time.time() - tt < 5:
+    #     if _ball_detector.is_autoexposure_stabilized():
+    #         print("AUTOEXPOSURE STABILIZED")
+    #         break
+    #     time.sleep(.2)
 
 def is_stable_detection():
     norms = [np.linalg.norm(np.array([c[0],c[1]])) for c in _ball_detector.img_centers if c is not None]
     rads = np.array([r for r in _ball_detector.img_radius if r is not None])
     # print("norms ",norms)
+    stdrads = 0
+    stddev = 0
+    if len(norms) > 1: stddev = len(norms)
+    if len(rads) > 1: stdrads = np.std(rads)
+
     stddev=np.std(norms)
     # print("stddev ",stddev)
     # print('rad std: ', np.std(rads))
-    if len(norms) >= 2 and stddev < 50 and np.std(rads) < 5:
+    if len(norms) >= 2 and stddev < 50 and stdrads < 5:
         return True
     return False
 
-def scan_for_ball(angle, scan_speed=_df_scan_ball_speed):
+def scan_for_ball(angle, scan_speed=_df_scan_ball_speed, say = True):
     """**Rotate in place while looking for the ball**
 
     This function executes a rotation, with certain angular speed
@@ -393,6 +399,7 @@ def scan_for_ball(angle, scan_speed=_df_scan_ball_speed):
     """
 
     # makes positive angles cw
+    if say: say('looking for ball')
     set_camera_for_ball()
     if not init_ball_detection():
         say_error("Ball detection can't be initilized")
@@ -419,7 +426,15 @@ def scan_for_ball(angle, scan_speed=_df_scan_ball_speed):
             print(e)
             traceback.print_exc()
             say_error("Scan for ball failed")
-    return is_stable_detection()
+    result = is_stable_detection()
+    if say:
+
+        if result:
+            say('Found ball')
+        else:
+            say_error("Can't find ball")
+
+    return result
 
 def compute_hor_dev():
     errors_n = [(160 - c[0]) for c in _ball_detector.img_centers if c is not None]
@@ -545,12 +560,12 @@ def __align_with_ball():
 def set_camera_for_ball():
 
     robot = easy_cozmo._robot
-    if _ball_detector is not None and _ball_detector.is_autoexposure_enabled():
-        _ball_detector.autoexposure_algo.set_target(120)
-        return
+    # if _ball_detector is not None and _ball_detector.is_autoexposure_enabled():
+    #     _ball_detector.autoexposure_algo.set_target(120)
+    #     return
 
     robot.camera.image_stream_enabled = True
-    robot.camera.enable_auto_exposure(True)
+    # robot.camera.enable_auto_exposure(True)
     #robot.camera.set_manual_exposure(_df_exp,_df_gain)
     robot.set_head_light(False)
     robot.camera.color_image_enabled = True
@@ -558,11 +573,11 @@ def set_camera_for_ball():
     robot.camera.image_stream_enabled = True
 
 def set_camera_for_cube():
-    if _ball_detector is not None and _ball_detector.is_autoexposure_enabled():
-        _ball_detector.autoexposure_algo.set_target(140)
-        return
+    # if _ball_detector is not None and _ball_detector.is_autoexposure_enabled():
+    #     _ball_detector.autoexposure_algo.set_target(140)
+    #     return
 
-    return
+    # return
     robot = easy_cozmo._robot
     robot.camera.image_stream_enabled = False
     robot.camera.enable_auto_exposure(True)
@@ -573,7 +588,7 @@ def set_camera_for_cube():
     pause(1)
 
 
-def align_with_ball2():
+def align_with_ball2(say = False):
     if not init_ball_detection():
         say_error("Ball detection can't be initilized")
         return False
@@ -625,11 +640,17 @@ def align_with_ball2():
         if time.time() > start_t + 30:
             print("TIMEOUT")
             timeout = True
-
-    return is_stable_detection()
+    result = is_stable_detection()
+    if say:
+        if result:
+            say('ball alignment succeeded ')
+        else:
+            say("can't align with ball")
+    return result
 
 def align_with_ball():
-    return align_with_ball2()
+    say('Aligning with ball')
+    return align_with_ball2(say = True)
 
 def fix_virtual_ball_in_world(position, ball_diameter=40):
     robot = easy_cozmo._robot
@@ -658,7 +679,7 @@ def align_ball_and_cube(cube_id):
         return False
 
     robot = easy_cozmo._robot
-    if scan_for_ball(360):
+    if scan_for_ball(360, say = False):
         #print("FOUND BALL")
         if align_with_ball2():
             reset_odometry()
@@ -718,6 +739,7 @@ def align_ball_and_cube(cube_id):
                     if not ret:
                         return False
                     else:
+
                         return True
             else:
                 say_error("Can't find cube {}".format(cube_id))
@@ -728,9 +750,11 @@ def align_ball_and_cube(cube_id):
     else:
         say_error("Can't find ball")
         return False
+
     return True
 
 def align_with_ball_and_cube(cube_id):
+    say(f'aligning with ball and cube{cube_id}')
     return align_ball_and_cube(cube_id)
 
 def align_ball_and_marker(marker_id):
@@ -739,7 +763,7 @@ def align_ball_and_marker(marker_id):
         return False
 
     robot = easy_cozmo._robot
-    if scan_for_ball(360):
+    if scan_for_ball(360, say = False):
         #print("FOUND BALL")
         if align_with_ball2():
             reset_odometry()
@@ -920,7 +944,7 @@ def _align_ball_and_goal():
                 say_error("Can't detect goal")
                 return False
             set_camera_for_ball()
-            if scan_for_ball(360) and align_with_ball2():
+            if scan_for_ball(360, say = False) and align_with_ball2():
                 d2 = distance_to_ball()
                 if d2 is None:
                     say_error("Can't estimate distance to ball")
