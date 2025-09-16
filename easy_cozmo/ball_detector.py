@@ -366,10 +366,10 @@ def is_stable_detection():
     # print("norms ",norms)
     stdrads = 0
     stddev = 0
-    if len(norms) > 1: stddev = len(norms)
-    if len(rads) > 1: stdrads = np.std(rads)
-
-    stddev=np.std(norms)
+    if len(norms) > 0:
+     stddev = len(norms)
+    if len(rads) > 0: 
+        stdrads = np.std(rads)
     # print("stddev ",stddev)
     # print('rad std: ', np.std(rads))
     if len(norms) >= 2 and stddev < 50 and stdrads < 5:
