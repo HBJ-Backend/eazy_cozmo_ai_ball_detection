@@ -642,15 +642,15 @@ def align_with_ball2(talk = False):
             print("TIMEOUT")
             timeout = True
     result = is_stable_detection()
-    if talk:
-        if result:
-            say('ball alignment succeeded ')
-        else:
-            say("can't align with ball")
+    # if talk:
+    #     if result:
+    #         say('ball alignment succeeded ')
+    #     else:
+    #         say("can't align with ball")
     return result
 
 def align_with_ball():
-    say('Aligning with ball')
+    # say('Aligning with ball')
     return align_with_ball2(talk = True)
 
 def fix_virtual_ball_in_world(position, ball_diameter=40):
@@ -755,7 +755,7 @@ def align_ball_and_cube(cube_id):
     return True
 
 def align_with_ball_and_cube(cube_id):
-    say(f'aligning with ball and cube{cube_id}')
+    # say(f'aligning with ball and cube{cube_id}')
     return align_ball_and_cube(cube_id)
 
 def align_ball_and_marker(marker_id):
