@@ -376,7 +376,7 @@ def is_stable_detection():
         return True
     return False
 
-def scan_for_ball(angle, scan_speed=_df_scan_ball_speed, say = True):
+def scan_for_ball(angle, scan_speed=_df_scan_ball_speed, talk = True):
     """**Rotate in place while looking for the ball**
 
     This function executes a rotation, with certain angular speed
@@ -399,7 +399,8 @@ def scan_for_ball(angle, scan_speed=_df_scan_ball_speed, say = True):
     """
 
     # makes positive angles cw
-    if say: say('looking for ball')
+    # if talk: 
+    #     say('looking for ball')
     set_camera_for_ball()
     if not init_ball_detection():
         say_error("Ball detection can't be initilized")
@@ -427,7 +428,7 @@ def scan_for_ball(angle, scan_speed=_df_scan_ball_speed, say = True):
             traceback.print_exc()
             say_error("Scan for ball failed")
     result = is_stable_detection()
-    if say:
+    if talk:
 
         if result:
             say('Found ball')
@@ -588,7 +589,7 @@ def set_camera_for_cube():
     pause(1)
 
 
-def align_with_ball2(say = False):
+def align_with_ball2(talk = False):
     if not init_ball_detection():
         say_error("Ball detection can't be initilized")
         return False
@@ -641,7 +642,7 @@ def align_with_ball2(say = False):
             print("TIMEOUT")
             timeout = True
     result = is_stable_detection()
-    if say:
+    if talk:
         if result:
             say('ball alignment succeeded ')
         else:
@@ -650,7 +651,7 @@ def align_with_ball2(say = False):
 
 def align_with_ball():
     say('Aligning with ball')
-    return align_with_ball2(say = True)
+    return align_with_ball2(talk = True)
 
 def fix_virtual_ball_in_world(position, ball_diameter=40):
     robot = easy_cozmo._robot
@@ -679,7 +680,7 @@ def align_ball_and_cube(cube_id):
         return False
 
     robot = easy_cozmo._robot
-    if scan_for_ball(360, say = False):
+    if scan_for_ball(360, talk = False):
         #print("FOUND BALL")
         if align_with_ball2():
             reset_odometry()
@@ -763,7 +764,7 @@ def align_ball_and_marker(marker_id):
         return False
 
     robot = easy_cozmo._robot
-    if scan_for_ball(360, say = False):
+    if scan_for_ball(360, talk = False):
         #print("FOUND BALL")
         if align_with_ball2():
             reset_odometry()
@@ -944,7 +945,7 @@ def _align_ball_and_goal():
                 say_error("Can't detect goal")
                 return False
             set_camera_for_ball()
-            if scan_for_ball(360, say = False) and align_with_ball2():
+            if scan_for_ball(360, talk = False) and align_with_ball2():
                 d2 = distance_to_ball()
                 if d2 is None:
                     say_error("Can't estimate distance to ball")
