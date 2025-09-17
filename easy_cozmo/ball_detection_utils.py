@@ -76,7 +76,8 @@ import pathlib
 
 # from yolov5 import YOLOv5
 def load_model():
-    import torch
+    # import torch
+    import yolov5
     # print('load')
     # --- Patch PosixPath for Windows ---
     if hasattr(pathlib, "PosixPath"):
@@ -84,8 +85,8 @@ def load_model():
     # --- Config ---
     MODEL_PATH = "C:/Users/CS/eazy_cozmo_ai_ball_detection/easy_cozmo/best_windows.pt"   # path to your trained YOLOv5-Nano model
     # Load the YOLOv5 model
-    # model = yolov5.load(MODEL_PATH)
-    model = torch.hub.load('C:/Users/CS/AppData/Local/Programs/Python/Python39/Lib/site-packages/yolov5', 'custom', path = "C:/Users/CS/eazy_cozmo_ai_ball_detection/easy_cozmo/best_windows.pt", source = 'local')
+    model = yolov5.load(MODEL_PATH)
+    # model = torch.hub.load('C:/Users/CS/AppData/Local/Programs/Python/Python39/Lib/site-packages/yolov5', 'custom', path = "C:/Users/CS/eazy_cozmo_ai_ball_detection/easy_cozmo/best_windows.pt", source = 'local')
 
     return model
 
