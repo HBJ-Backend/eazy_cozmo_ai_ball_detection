@@ -178,7 +178,22 @@ class AutoExposureAlgo:
             self.stabilized = True
         self.prev_err = self.err
         return new_gain, new_exposure
+LEFT = 1
+RIGHT = 2
+TOP = 4
+BOTTOM = 8
 
+#: Top left position
+TOP_LEFT = TOP | LEFT
+
+#: Bottom left position
+BOTTOM_LEFT = BOTTOM | LEFT
+
+#: Top right position
+TOP_RIGHT = TOP | RIGHT
+
+#: Bottom right position
+BOTTOM_RIGHT = BOTTOM | RIGHT
 
 class BallAnnotator(cozmo.annotate.Annotator):
     def __init__(self, detector):
@@ -215,6 +230,23 @@ class BallAnnotator(cozmo.annotate.Annotator):
             text.render(d, bounds)
 
 
+        if not self._detector.model:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('LOADING MODEL. Please Wait ...',position = TOP_LEFT, font=arialfont, color='red')
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('LOADING MODEL. Please Wait ...',position = TOP_LEFT, color='red')
+            text.render(d, bounds)
+        
+
+
+
+
+
 class BallDetector:
     def __init__(self, robot, autoexposure=True):
         self.saved = 0
@@ -226,9 +258,9 @@ class BallDetector:
         self.distance = None
         self.distances = []
         self.autoexposure_algo = None
-        say('Loading Model. Please wait')
-        self.model = load_model()
-        say('Model is ready')
+        # say('Loading Model. Please wait')
+        self.model = None
+        # say('Model is ready')
         self.frame_count = 0
         # self.detected_prev_frame = False
         # if autoexposure:
@@ -257,39 +289,39 @@ class BallDetector:
 
         self.frame_count+=1
         if self.frame_count % 2 == 0:
+            if self.model:
+                detection  = detect_ball(cv2_image, self.model)
 
-            detection  = detect_ball(cv2_image, self.model)
 
+            #Show the output
+                if detection:
+                    detected, proc_cv_image, center, rad = detection
+                    # print('rad: ', rad)
+                    # self._robot.remove_event_handler(cozmo.world.EvtNewCameraImage, self.on_img)
 
-        #Show the output
-            if detection:
-                detected, proc_cv_image, center, rad = detection
-                # print('rad: ', rad)
-                # self._robot.remove_event_handler(cozmo.world.EvtNewCameraImage, self.on_img)
+                    distance = None
+                    if detected:
+                        ret, rvecs, tvecs = get_ball_pnp(center, rad)
+                        if ret:
+                            distance = np.linalg.norm(tvecs)
 
-                distance = None
-                if detected:
-                    ret, rvecs, tvecs = get_ball_pnp(center, rad)
-                    if ret:
-                        distance = np.linalg.norm(tvecs)
+                    self.img_centers.append(center)
+                    self.img_radius.append(rad)
+                    self.distances.append(distance)
+                    if len(self.img_centers) > 10:
+                        self.img_centers = self.img_centers[-10:]
+                    if len(self.img_radius) > 10:
+                        self.img_radius = self.img_radius[-10:]
+                    if len(self.distances) > 10:
+                        self.distances = self.distances[-10:]
 
-                self.img_centers.append(center)
-                self.img_radius.append(rad)
-                self.distances.append(distance)
-                if len(self.img_centers) > 10:
-                    self.img_centers = self.img_centers[-10:]
-                if len(self.img_radius) > 10:
-                    self.img_radius = self.img_radius[-10:]
-                if len(self.distances) > 10:
-                    self.distances = self.distances[-10:]
-
-                self.center = center
-                self.rad = rad
-                self.distance = distance
-                if len(self._ma_img_center_dev) > 10:
-                    self._ma_img_center_dev = self._ma_img_center_dev[-10:]
-                    
-        
+                    self.center = center
+                    self.rad = rad
+                    self.distance = distance
+                    if len(self._ma_img_center_dev) > 10:
+                        self._ma_img_center_dev = self._ma_img_center_dev[-10:]
+                        
+            
 
     def get_avg_distance(self):
         dists=[d for d in self.distances if d is not None]
@@ -342,17 +374,19 @@ def init_post_marker_registration():
     _post_marker_registered = True
     pause(2)
 
-
-
 def _initialize_ball_detector():
     import time
     global _ball_detector
+
     robot = easy_cozmo._robot
+
     set_camera_for_ball()
     # robot.camera.set_manual_exposure(8,0.8)
     _move_head(degrees(-11))
     #robot.set_head_angle(Angle(degrees=4)).wait_for_completed()
     _ball_detector = BallDetector(robot)
+    _ball_detector.model = load_model()
+
     tt = time.time()
     # while time.time() - tt < 5:
     #     if _ball_detector.is_autoexposure_stabilized():
@@ -401,6 +435,7 @@ def scan_for_ball(angle, scan_speed=_df_scan_ball_speed, talk = True):
     # makes positive angles cw
     # if talk: 
     #     say('looking for ball')
+
     set_camera_for_ball()
     if not init_ball_detection():
         say_error("Ball detection can't be initilized")
