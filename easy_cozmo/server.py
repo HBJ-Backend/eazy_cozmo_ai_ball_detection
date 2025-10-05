@@ -1,22 +1,19 @@
 import socket
 import pathlib
-import os
 import cv2
-import tempfile
 import yolov5
 import json
-import numpy as np
 import threading
-from datetime import datetime
-
+import getpass
 def load_model():
     if hasattr(pathlib, "PosixPath"):
         pathlib.PosixPath = pathlib.WindowsPath
-    MODEL_PATH = "C:/Users/CS/eazy_cozmo_ai_ball_detection/easy_cozmo/best_windows.pt"
+
+    MODEL_PATH = f"C:/Users/{getpass.getuser()}/eazy_cozmo_ai_ball_detection/easy_cozmo/best_windows.pt"
     model = yolov5.load(MODEL_PATH)
     return model
 
-def detect_ball(image_path, model, conf_thresh=0.8):
+def detect_ball(image_path, model, conf_thresh=0.7):
     try:
         frame = cv2.imread(image_path)
         if frame is None:
@@ -26,7 +23,7 @@ def detect_ball(image_path, model, conf_thresh=0.8):
         for det in results.xyxy[0]:  # detections for first image
             x1, y1, x2, y2, conf, cls = det
             radius = int(0.5 * max(x2 - x1, y2 - y1))
-            if conf >= conf_thresh and radius < 80 and radius > 20:
+            if conf >= conf_thresh and radius > 17:
                 cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
                 radius = int(0.5 * max(x2 - x1, y2 - y1))
 
@@ -48,37 +45,31 @@ import socket
 def handle_client(conn, addr, model):
     print(f"[SERVER] New connection from {addr}")
     try:
-        conn.settimeout(2.0)  # 2-second timeout for no data
-
+        
         buffer = ""
 
         while True:
-            try:
-                data = conn.recv(1024).decode('utf-8')
-                if not data:
-                    print(f"[SERVER] Connection from {addr} closed by client.")
-                    break
-
-                buffer += data
-
-                while '\n' in buffer:
-                    line, buffer = buffer.split('\n', 1)
-                    line = line.strip()
-                    if not line:
-                        continue
-
-                    result = detect_ball(line, model)
-
-                    try:
-                        conn.sendall((json.dumps(result) + '\n').encode('utf-8'))
-                    except (ConnectionResetError, BrokenPipeError) as e:
-                        print(f"[SERVER] Client disconnected early: {addr} — {e}")
-                        return
-
-            except socket.timeout:
-                # No data for 2 seconds, assume client done
-                print(f"[SERVER] No data from {addr} for 2 seconds, closing connection.")
+            data = conn.recv(1024).decode('utf-8')
+            if not data:
+                print(f"[SERVER] Connection from {addr} closed by client.")
                 break
+
+            buffer += data
+
+            while '\n' in buffer:
+                line, buffer = buffer.split('\n', 1)
+                line = line.strip()
+                if not line:
+                    continue
+
+                result = detect_ball(line, model)
+
+                try:
+                    conn.sendall((json.dumps(result) + '\n').encode('utf-8'))
+                except (ConnectionResetError, BrokenPipeError) as e:
+                    print(f"[SERVER] Client disconnected early: {addr} — {e}")
+                    return
+
 
     except Exception as e:
         print(f"[SERVER] Error with client {addr}: {e}")

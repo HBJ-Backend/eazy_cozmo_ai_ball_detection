@@ -2,11 +2,14 @@
 
 import cozmo
 from cozmo.util import degrees, Angle, Pose, distance_mm, speed_mmps, radians
+from .robot_utils import pause
+
 import math
 import time
 import sys
 import asyncio
 from cozmo.objects import LightCubeIDs, LightCube
+from PIL import Image, ImageDraw, ImageFont
 
 from .say import *
 from .say import _say_error
@@ -120,7 +123,107 @@ def scan_for_cube(angle, scan_speed=df_scan_cube_speed):
         return True
 
 
-def scan_for_cube_by_id(angle, cube_id, scan_speed=df_scan_cube_speed):
+
+found = False
+scanning = False
+scan_id = None
+scan_failed = False
+
+calculating_dist = False
+found_dist = False
+dist_failed = False
+
+aligning = False
+aligned = False
+align_failed = False
+@cozmo.annotate.annotator
+def scan_anno(image, scale, annotator=None, world=None, **kw):
+        if scanning:
+                d = ImageDraw.Draw(image)
+                bounds = (0, 0, image.width, image.height)
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                text = cozmo.annotate.ImageText(f'Scanning for cube {scan_id}', font = arialfont,
+                    position=cozmo.annotate.TOP_RIGHT, color = 'yellow')
+                text.render(d, bounds)
+        if found:
+
+                d = ImageDraw.Draw(image)
+                bounds = (0, 0, image.width, image.height)
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+
+                text = cozmo.annotate.ImageText(f'Found cube {scan_id}', font = arialfont,
+                    position=cozmo.annotate.TOP_RIGHT, color = 'green')
+                text.render(d, bounds)
+        if scan_failed:
+                d = ImageDraw.Draw(image)
+                bounds = (0, 0, image.width, image.height)
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+
+                text = cozmo.annotate.ImageText('Cube scan failed', font = arialfont,
+                    position=cozmo.annotate.TOP_RIGHT, color = 'red')
+                text.render(d, bounds)
+
+        if calculating_dist:
+                d = ImageDraw.Draw(image)
+                bounds = (0, 0, image.width, image.height)
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                text = cozmo.annotate.ImageText(f'Calculating distance to cube {scan_id}', font = arialfont,
+                    position=cozmo.annotate.TOP_RIGHT, color = 'yellow')
+                text.render(d, bounds)
+        if found_dist:
+
+                d = ImageDraw.Draw(image)
+                bounds = (0, 0, image.width, image.height)
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+
+                text = cozmo.annotate.ImageText(f'Found distance to cube {scan_id}', font = arialfont,
+                    position=cozmo.annotate.TOP_RIGHT, color = 'green')
+                text.render(d, bounds)
+
+        if dist_failed:
+                d = ImageDraw.Draw(image)
+                bounds = (0, 0, image.width, image.height)
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+
+                text = cozmo.annotate.ImageText('Distance calculation failed', font = arialfont,
+                    position=cozmo.annotate.TOP_RIGHT, color = 'red')
+                text.render(d, bounds)
+
+        if aligning:
+                print('here 2')
+                d = ImageDraw.Draw(image)
+                bounds = (0, 0, image.width, image.height)
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                text = cozmo.annotate.ImageText(f'Aligning with cube {scan_id}', font = arialfont,
+                    position=cozmo.annotate.TOP_RIGHT, color = 'yellow')
+                text.render(d, bounds)
+        if aligned:
+
+                d = ImageDraw.Draw(image)
+                bounds = (0, 0, image.width, image.height)
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+
+                text = cozmo.annotate.ImageText(f'Aligned to cube {scan_id}', font = arialfont,
+                    position=cozmo.annotate.TOP_RIGHT, color = 'green')
+                text.render(d, bounds)
+
+        if align_failed:
+
+                d = ImageDraw.Draw(image)
+                bounds = (0, 0, image.width, image.height)
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+
+                text = cozmo.annotate.ImageText('Alignment with cube failed', font = arialfont,
+                    position=cozmo.annotate.TOP_RIGHT, color = 'red')
+                text.render(d, bounds)
+
+
+
+
+
+
+
+def scan_for_cube_by_id(angle, cube_id, scan_speed=df_scan_cube_speed, annotate = True):
 
         """**Rotate in place while looking for a cube with specified id**
 
@@ -142,6 +245,16 @@ def scan_for_cube_by_id(angle, cube_id, scan_speed=df_scan_cube_speed):
         :return: True (suceeded) or False (failed).
 
         """
+        global scanning, found, scan_id, scan_failed
+        if annotate:
+                robot = easy_cozmo._robot
+                scanning = True
+                found = False
+                scan_id = cube_id
+        try:
+                robot.world.image_annotator.add_annotator('scan', scan_anno)
+        except:
+                pass 
 
         def check_cube_id(obj):
                 return _is_cube(obj) and obj.cube_id == cube_id
@@ -149,6 +262,11 @@ def scan_for_cube_by_id(angle, cube_id, scan_speed=df_scan_cube_speed):
                 cube = _get_visible_cube_by_id(cube_id)
                 if not cube:
                         _say_error("I can't see cube "+str(cube_id) +" sorry")
+                        if annotate: 
+                                scanning = False
+                                scan_failed = True
+                                pause(1)
+                                scan_failed = False
                         return False
                 else:
                         for i in range(3):
@@ -157,12 +275,26 @@ def scan_for_cube_by_id(angle, cube_id, scan_speed=df_scan_cube_speed):
                                         break
                         if cube.pose.origin_id == -1:
                                 _say_error("I can't localize cube "+str(cube_id) +" sorry")
+                                if annotate: 
+                                        scanning = False
+                                        scan_failed = True
+                                        pause(1)
+                                        scan_failed = False
                                 return False
         else:
                 _say_error("I couldn't find cube ", cube_id)
+                if annotate: 
+                        scanning = False
+                        scan_failed = True
+                        pause(1)
+                        scan_failed = False
                 return False
 
-
+        if annotate:
+                scanning = False
+                found = True
+                pause(1)
+                found = False
         return True
 
 
@@ -178,7 +310,7 @@ def scan_for_cube_one(angle, scan_speed=df_scan_cube_speed):
 
         """
 
-        return scan_for_cube_by_id(angle, 1, scan_speed)
+        return scan_for_cube_by_id(angle, 1, scan_speed, annotate = False)
 def scan_for_cube_two(angle, scan_speed=df_scan_cube_speed):
         """**Scan for cube with id=1**
 
@@ -190,7 +322,7 @@ def scan_for_cube_two(angle, scan_speed=df_scan_cube_speed):
         :return: True (suceeded) or False (failed)
 
         """
-        return scan_for_cube_by_id(angle, 2, scan_speed)
+        return scan_for_cube_by_id(angle, 2, scan_speed, annotate = False)
 
 def scan_for_cube_three(angle, scan_speed=df_scan_cube_speed):
 
@@ -204,7 +336,7 @@ def scan_for_cube_three(angle, scan_speed=df_scan_cube_speed):
         :return: True (suceeded) or False (failed)
 
         """
-        return scan_for_cube_by_id(angle, 3, scan_speed)
+        return scan_for_cube_by_id(angle, 3, scan_speed, annotate = False)
 
 def double_scan_for_any_cube(angle, scan_speed=df_scan_cube_speed,
                          headlight_switching_enabled=True):
@@ -301,19 +433,48 @@ def align_with_cube_by_id(cube_id, distance= df_align_distance,
         :type distance: float
 
         :return: True (suceeded) or False (failed) """
+        global aligning, aligned, align_failed
         from .actions_with_cubes import _get_visible_cube_by_id
+
+        aligning = True
+        print('aligning: ', aligning)
+        scan_id = cube_id
+        robot = easy_cozmo._robot
+        try:
+                robot.world.image_annotator.add_annotator('scan', scan_anno)
+        except:
+                pass 
+
         if cube_id not in [1,2,3]:
                 say_error("Cube id " + str(cube_id) + " not good")
+                aligning = False
+                align_failed = True
+                pause(1)
+                align_failed = False
                 return False
         easy_cozmo._robot.set_head_angle(degrees(0)).wait_for_completed()
         easy_cozmo._robot.set_head_light(False)
         cube = _get_visible_cube_by_id(cube_id)
         if cube is None:
-                _say_error("I can't see cube ", cube_id)
+                # _say_error("I can't see cube ", cube_id)
+                print('here')
+                aligning = False
+                align_failed = True
+                pause(1)
+                align_failed = False
                 return False
 
-        return _align_with_cube(cube)
-
+        res = _align_with_cube(cube)
+        aligning = False
+        if res:
+                aligned = True
+                pause(1)
+                aligned = False
+        else:
+                align_failed = True
+                pause(1)
+                align_failed = False
+        return res
 
 def pickup_cube():
         """ """
@@ -498,15 +659,40 @@ def center_cube(cube_id):
         return ret
 
 def distance_to_cube(cube_id):
+        global calculating_dist, scan_id, found_dist, dist_failed
         robot = easy_cozmo._robot
+        calculating_dist = True
+        scan_id = cube_id
+        pause(1)
+        try:
+                robot.world.image_annotator.add_annotator('scan', scan_anno)
+        except:
+                pass 
+                # annotator already defined
+
+
         if cube_id not in [1,2,3]:
                 say_error("Cube id " + str(cube_id) + " not good")
+                calculating_dist = False
+                dist_failed = True
+                pause(1)
+                dist_failed = False
                 return False
         cube = _get_localized_cube_by_id(cube_id)
         if not cube:
                 _say_error("I can't see cube ", cube_id)
+                calculating_dist = False
+                dist_failed = True
+                pause(1)
+                dist_failed = False
                 return False
         translation = robot.pose - cube.pose
         dst = translation.position.x ** 2 + translation.position.y ** 2
         dst = dst ** 0.5
+
+        calculating_dist = False
+        found_dist = True
+        pause(1)
+        found_dist = False
+
         return dst

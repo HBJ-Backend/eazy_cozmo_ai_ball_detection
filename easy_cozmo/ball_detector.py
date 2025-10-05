@@ -214,6 +214,263 @@ class BallAnnotator(cozmo.annotate.Annotator):
             if text is None:
                 text = cozmo.annotate.ImageText('DISTANCE %d \u00b0 ' % distance, color='green')
             text.render(d, bounds)
+        if self._detector.scanning:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Scanning for ball', font=arialfont, color='yellow', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Scanning for ball', color='yellow' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.found_ball:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Ball Detected', font=arialfont, color='green', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Ball Detected', color='green' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.ball_scan_failed:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('No ball found', font=arialfont, color='red', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('No ball found', color='red' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.aligning_with_ball:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Aligning with ball', font=arialfont, color='yellow', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Aligning with ball', color='yellow' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.aligned_with_ball:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Aligned with ball', font=arialfont, color='green', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Aligned with ball', color='green' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.ball_align_failed:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Ball alignment failed', font=arialfont, color='red', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Ball alignment failed', color='red' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.aligning_with_ball_and_cube:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText(f'Aligning with ball and cube {self._detector.align_ball_and_cube_id}', font=arialfont, color='yellow', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText(f'Aligning with ball and cube {self._detector.align_ball_and_cube_id}', color='yellow' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.aligned_with_ball_and_cube:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText(f'Aligned with ball and cube {self._detector.align_ball_and_cube_id}', font=arialfont, color='green', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText(f'Aligned with ball and cube {self._detector.align_ball_and_cube_id}', color='green' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.ball_cube_align_failed:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Alignment with ball and cube failed', font=arialfont, color='red', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Alignment with ball and cube failed', color='red' , position = 5)
+            text.render(d, bounds)
+
+
+        if self._detector.kicking:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Kicking Ball', font=arialfont, color='yellow', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Kicking Ball', color='yellow' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.kicked:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Ball Kicked', font=arialfont, color='green', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Ball Kicked', color='green' , position = 5)
+            text.render(d, bounds)
+
+
+        if self._detector.kick_failed:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Kick failed', font=arialfont, color='red', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Kick failed', color='red' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.scanning_left_post:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Scanning for left post', font=arialfont, color='yellow', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Scanning for left post', color='yellow' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.found_left_post:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Found left post', font=arialfont, color='green', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Found left post', color='green' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.left_post_scan_failed:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('No left post found', font=arialfont, color='red', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('No left post found', color='red' , position = 5)
+            text.render(d, bounds)
+
+
+        if self._detector.scanning_right_post:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Scanning for right post', font=arialfont, color='yellow', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Scanning for right post', color='yellow' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.found_right_post:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Found right post', font=arialfont, color='green', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Found right post', color='green' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.right_post_scan_failed:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('No right post found', font=arialfont, color='red', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('No right post found', color='red' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.getting_ball_dist:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Calculating Ball distance', font=arialfont, color='yellow', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Calculating Ball distance', color='yellow' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.got_ball_dist:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Ball distance found', font=arialfont, color='green', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Ball distance found', color='green' , position = 5)
+            text.render(d, bounds)
+
+        if self._detector.ball_dist_failed:
+            text = None
+            try:
+                arialfont = ImageFont.truetype("arial.ttf", 28, encoding="unic")
+                if arialfont != None:
+                    text = cozmo.annotate.ImageText('Ball distance calculation failed', font=arialfont, color='red', position = 5)
+            except:
+                pass
+            if text is None:
+                text = cozmo.annotate.ImageText('Ball distance calculation failed', color='red' , position = 5)
+            text.render(d, bounds)
+
+
+
 
 # === CLIENT CLASS ===
 class BallDetectionClient:
@@ -267,12 +524,36 @@ class BallDetector:
         self.distances = []
         self.autoexposure_algo = None
         self.client = BallDetectionClient()
+        self.scanning = False
+        self.found_ball = False
+        self.ball_scan_failed = False
+        self.aligning_with_ball = False
+        self.aligned_with_ball = False
+        self.ball_align_failed = False
+        self.aligning_with_ball_and_cube = False
+        self.aligned_with_ball_and_cube = False
+        self.ball_cube_align_failed = False
+        self.align_ball_and_cube_id = None
+        self.kicking = False
+        self.kicked = False
+        self.kick_failed = False
+        self.scanning_left_post = False
+        self.scanning_right_post = False
+        self.found_left_post = False
+        self.found_right_post = False
+        self.left_post_scan_failed = False
+        self.right_post_scan_failed = False
+        self.getting_ball_dist = False
+        self.got_ball_dist = False
+        self.ball_dist_failed = False
+
+
         # self.model = load_model()
         self.frame_count = 0
         # self.detected_prev_frame = False
-        if autoexposure:
-            print("Using autoexposure")
-            self.autoexposure_algo = AutoExposureAlgo(robot)
+        # if autoexposure:
+        #     print("Using autoexposure")
+        #     self.autoexposure_algo = AutoExposureAlgo(robot)
         self._robot.add_event_handler(cozmo.world.EvtNewCameraImage, self.on_img)
         self.anno = BallAnnotator(self)
         self._robot.world.image_annotator.add_annotator('balldetect', self.anno)
@@ -386,16 +667,16 @@ def _initialize_ball_detector():
     global _ball_detector
     robot = easy_cozmo._robot
     set_camera_for_ball()
-    robot.camera.set_manual_exposure(8,0.8)
+    # robot.camera.set_manual_exposure(8,0.8)
     _move_head(degrees(-11))
     #robot.set_head_angle(Angle(degrees=4)).wait_for_completed()
     _ball_detector = BallDetector(robot)
-    tt = time.time()
-    while time.time() - tt < 5:
-        if _ball_detector.is_autoexposure_stabilized():
-            print("AUTOEXPOSURE STABILIZED")
-            break
-        time.sleep(.2)
+    # tt = time.time()
+    # while time.time() - tt < 5:
+    #     if _ball_detector.is_autoexposure_stabilized():
+    #         print("AUTOEXPOSURE STABILIZED")
+    #         break
+    #     time.sleep(.2)
 
 def is_stable_detection():
     norms = [np.linalg.norm(np.array([c[0],c[1]])) for c in _ball_detector.img_centers if c is not None]
@@ -408,7 +689,7 @@ def is_stable_detection():
         return True
     return False
 
-def scan_for_ball(angle, scan_speed=_df_scan_ball_speed):
+def scan_for_ball(angle, scan_speed=_df_scan_ball_speed, annotate = True):
     """**Rotate in place while looking for the ball**
 
     This function executes a rotation, with certain angular speed
@@ -431,12 +712,13 @@ def scan_for_ball(angle, scan_speed=_df_scan_ball_speed):
     """
 
     # makes positive angles cw
+    global _ball_detector
     set_camera_for_ball()
     if not init_ball_detection():
         say_error("Ball detection can't be initilized")
         return False
-
-
+    if annotate:
+        _ball_detector.scanning = True
     angle *= -1
     robot = easy_cozmo._robot
     _move_head(degrees(-11))
@@ -457,8 +739,22 @@ def scan_for_ball(angle, scan_speed=_df_scan_ball_speed):
             print(e)
             traceback.print_exc()
             say_error("Scan for ball failed")
-    
-    return is_stable_detection()
+    _ball_detector.scanning = False
+    res = is_stable_detection()
+
+    if res and annotate:
+        _ball_detector.found_ball = True
+        pause(1)
+        _ball_detector.found_ball = False
+    elif not res and annotate:
+        _ball_detector.ball_scan_failed = True
+        pause(1)
+        _ball_detector.ball_scan_failed = False
+        
+    return res
+
+
+    # return is_stable_detection()
 
 def compute_hor_dev():
     errors_n = [(160 - c[0]) for c in _ball_detector.img_centers if c is not None]
@@ -487,7 +783,7 @@ def last_err():
 def is_ball_visible():
     return is_stable_detection()
 
-def distance_to_ball():
+def distance_to_ball(annotate = True):
     """**Get the distance (in mm) to the ball**
 
     ..  note::
@@ -499,14 +795,41 @@ def distance_to_ball():
     :return: The distance in mm or an invalid value (None)
 
     """
+    global _ball_detector
+
+
+
     if not init_ball_detection():
         say_error("Ball detection can't be initilized")
         return None
 
+    if annotate:
+        _ball_detector.getting_ball_dist = True
+        pause(1)
+
     if not is_stable_detection():
-        say_error("Ball not detected")
+        # say_error("Ball not detected")
+        if annotate:
+            _ball_detector.getting_ball_dist = False
+
+            _ball_detector.ball_dist_failed = True
+            pause(1)
+            _ball_detector.ball_dist_failed = False
         return None
-    return _ball_detector.get_avg_distance()
+    
+
+    res = _ball_detector.get_avg_distance()
+    _ball_detector.getting_ball_dist = False
+    if res and annotate: 
+        _ball_detector.got_ball_dist = True
+        pause(1)
+        _ball_detector.got_ball_dist = False
+    elif not res and annotate:
+        _ball_detector.ball_dist_failed = True
+        pause(1)
+        _ball_detector.ball_dist_failed = False
+
+    return res
 
 
 def __align_with_ball():
@@ -584,9 +907,9 @@ def __align_with_ball():
 def set_camera_for_ball():
 
     robot = easy_cozmo._robot
-    if _ball_detector is not None and _ball_detector.is_autoexposure_enabled():
-        _ball_detector.autoexposure_algo.set_target(120)
-        return
+    # if _ball_detector is not None and _ball_detector.is_autoexposure_enabled():
+    #     _ball_detector.autoexposure_algo.set_target(120)
+    #     return
 
     robot.camera.image_stream_enabled = True
     robot.camera.enable_auto_exposure(True)
@@ -597,17 +920,17 @@ def set_camera_for_ball():
     robot.camera.image_stream_enabled = True
 
 def set_camera_for_cube():
-    if _ball_detector is not None and _ball_detector.is_autoexposure_enabled():
-        _ball_detector.autoexposure_algo.set_target(140)
-        return
+    # if _ball_detector is not None and _ball_detector.is_autoexposure_enabled():
+    #     _ball_detector.autoexposure_algo.set_target(140)
+    #     return
 
-    return
+    # return
     robot = easy_cozmo._robot
-    robot.camera.image_stream_enabled = False
+    robot.camera.image_stream_enabled = True
     robot.camera.enable_auto_exposure(True)
     #robot.camera.set_manual_exposure(30,2)
     #robot.set_head_light(True)
-    robot.camera.color_image_enabled = False
+    robot.camera.color_image_enabled = True
     robot.camera.image_stream_enabled = True
     pause(1)
 
@@ -667,8 +990,28 @@ def align_with_ball2():
 
     return is_stable_detection()
 
-def align_with_ball():
-    return align_with_ball2()
+def align_with_ball(annotate = True):
+    global _ball_detector
+    if not _ball_detector:
+        init_ball_detection()
+
+    if annotate:
+        _ball_detector.aligning_with_ball = True
+    res = align_with_ball2()
+    if annotate:
+        _ball_detector.aligning_with_ball = False
+
+    if res and annotate:
+        _ball_detector.aligned_with_ball = True
+        pause(1)
+        _ball_detector.aligned_with_ball = False
+
+    elif not res and annotate:
+        _ball_detector.ball_align_failed = True
+        pause(1)
+        _ball_detector.ball_align_failed = False
+
+    return res
 
 def fix_virtual_ball_in_world(position, ball_diameter=40):
     robot = easy_cozmo._robot
@@ -697,12 +1040,12 @@ def align_ball_and_cube(cube_id):
         return False
 
     robot = easy_cozmo._robot
-    if scan_for_ball(360):
+    if scan_for_ball(360, annotate = False):
         #print("FOUND BALL")
         if align_with_ball2():
             reset_odometry()
             #print("ALIGNED WITH BALL")
-            distance = distance_to_ball()
+            distance = distance_to_ball(annotate = False)
             if distance == None:
                 say_error("Can't estimate distance")
                 return False
@@ -710,7 +1053,7 @@ def align_ball_and_cube(cube_id):
             cube = None
             cube =  _get_localized_cube_by_id(cube_id)
             if cube is None:
-                if scan_for_cube_by_id(360, cube_id):
+                if scan_for_cube_by_id(360, cube_id, annotate = False):
                     cube = _get_visible_cube_by_id(cube_id)
             if cube is not None:
                 rel_pose = _get_relative_pose(cube.pose, robot.pose)
@@ -723,7 +1066,7 @@ def align_ball_and_cube(cube_id):
                 cube_pose = (rel_pose.position.x, rel_pose.position.y)
                 #print("CUBE POSE ", cube_pose)
                 angle = math.atan2(ball_pose[1]-cube_pose[1], ball_pose[0]-cube_pose[0])
-                dist = 100
+                dist = 130
 
                 new_pose = (ball_pose[0] + dist*math.cos(angle),
                             ball_pose[1] + dist*math.sin(angle))
@@ -736,7 +1079,7 @@ def align_ball_and_cube(cube_id):
                 if align_with_ball2():
                     rel_pose = _get_relative_pose(cube.pose, robot.pose)
                     #print("2ND RELATIVE POSE ", rel_pose)
-                    distance = distance_to_ball()
+                    distance = distance_to_ball(annotate = False)
                     if distance == None:
                         say_error("Can't estimate distance")
                         return False
@@ -746,7 +1089,7 @@ def align_ball_and_cube(cube_id):
                     cube_pose = (rel_pose.position.x, rel_pose.position.y)
                     #print("CUBE POSE ", cube_pose)
                     angle = math.atan2(ball_pose[1]-cube_pose[1], ball_pose[0]-cube_pose[0])
-                    dist = 100
+                    dist = 130
 
                     new_pose = (ball_pose[0] + dist*math.cos(angle),
                                 ball_pose[1] + dist*math.sin(angle))
@@ -770,7 +1113,25 @@ def align_ball_and_cube(cube_id):
     return True
 
 def align_with_ball_and_cube(cube_id):
-    return align_ball_and_cube(cube_id)
+    global _ball_detector
+    if not _ball_detector:
+        init_ball_detection()
+
+    _ball_detector.aligning_with_ball_and_cube = True
+    _ball_detector.align_ball_and_cube_id = cube_id
+    res = align_ball_and_cube(cube_id)
+    _ball_detector.aligning_with_ball_and_cube = False
+
+    if res:
+        _ball_detector.aligned_with_ball_and_cube = True
+        pause(1)
+        _ball_detector.aligned_with_ball_and_cube = False
+    else:
+        _ball_detector.ball_cube_align_failed = True
+        pause(1)
+        _ball_detector.ball_cube_align_failed = False
+
+    return res
 
 def align_ball_and_marker(marker_id):
     if not init_ball_detection():
@@ -778,12 +1139,12 @@ def align_ball_and_marker(marker_id):
         return False
 
     robot = easy_cozmo._robot
-    if scan_for_ball(360):
+    if scan_for_ball(360, annotate = False):
         #print("FOUND BALL")
         if align_with_ball2():
             reset_odometry()
             #print("ALIGNED WITH BALL")
-            distance = distance_to_ball()
+            distance = distance_to_ball(annotate = False)
             if distance == None:
                 say_error("Can't estimate distance")
                 return False
@@ -817,7 +1178,7 @@ def align_ball_and_marker(marker_id):
                 if align_with_ball2():
                     rel_pose = _get_relative_pose(marker.pose, robot.pose)
                     #print("2ND RELATIVE POSE ", rel_pose)
-                    distance = distance_to_ball()
+                    distance = distance_to_ball(annotate = False)
                     if distance == None:
                         say_error("Can't estimate distance")
                         return False
@@ -867,15 +1228,39 @@ def kick_ball(distance=100, ball_diam=40):
     _kick1(distance=distance, ball_diam=ball_diam)
 
 def kick(distance=100, ball_diam=40):
+    global _ball_detector
+    if not _ball_detector:
+        init_ball_detection()
+    _ball_detector.kicking = True
+
     if center_ball():
-        d = distance_to_ball()
+        d = distance_to_ball(annotate = False)
         #print("d = ",d)
         if d is None:
             say_error("No ball found")
+            _ball_detector.kicking = False
+            _ball_detector.kick_failed = True
+            pause(1)
+            _ball_detector.kick_failed = False
             return False
-        return _kick1(distance=d+100, ball_diam=ball_diam)
+
+        res = _kick1(distance=d+80, ball_diam=ball_diam)
+        _ball_detector.kicking = False
+
+        if res:
+            _ball_detector.kicked = True
+            pause(1)
+            _ball_detector.kicked = False
+        else:
+            _ball_detector.kick_failed = True
+            pause(1)
+            _ball_detector.kick_failed = False
+        return res
     else:
-        say_error("No ball found")
+        _ball_detector.kicking = False
+        _ball_detector.kick_failed = True
+        pause(1)
+        _ball_detector.kick_failed = False
         return False
 
 def touch_ball(distance=200, ball_diam=40):
@@ -959,8 +1344,8 @@ def _align_ball_and_goal():
                 say_error("Can't detect goal")
                 return False
             set_camera_for_ball()
-            if scan_for_ball(360) and align_with_ball2():
-                d2 = distance_to_ball()
+            if scan_for_ball(360, annotate = False) and align_with_ball2():
+                d2 = distance_to_ball(annotate = False)
                 if d2 is None:
                     say_error("Can't estimate distance to ball")
                     return False
@@ -989,7 +1374,7 @@ def _align_ball_and_goal():
                 if align_with_ball2():
                     rel_pose = _get_relative_pose(marker.pose, robot.pose)
                     #print("2ND RELATIVE POSE ", rel_pose)
-                    distance = distance_to_ball()
+                    distance = distance_to_ball(annotate = False)
                     if distance == None:
                         say_error("Can't estimate distance")
                         return False
@@ -1024,13 +1409,42 @@ def _align_ball_and_goal():
     return True
 
 def scan_for_left_post(angle):
+    init_ball_detection()
 #    init_post_marker_registration()
-    return scan_for_cube_by_id(360, 1)
+    global _ball_detector
+    _ball_detector.scanning_left_post = True
+    res = scan_for_cube_by_id(angle, 1, annotate = False)
+    _ball_detector.scanning_left_post = False
+    if res:
+        _ball_detector.found_left_post = True
+        pause(1)
+        _ball_detector.found_left_post = False
+    else:
+        _ball_detector.left_post_scan_failed = True
+        pause(1)
+        _ball_detector.left_post_scan_failed = False
+
+    return res
 #    return scan_for_marker_by_id(angle, _left_post_marker_id , use_distance_threshold=False)
 
 def scan_for_right_post(angle):
+    init_ball_detection()
 #    init_post_marker_registration()
-    return scan_for_cube_by_id(360, 2)
+    global _ball_detector
+    _ball_detector.scanning_right_post = True
+    res = scan_for_cube_by_id(angle, 2, annotate = False)
+    _ball_detector.scanning_right_post = False
+    if res:
+        _ball_detector.found_right_post = True
+        pause(1)
+        _ball_detector.found_right_post = False
+    else:
+        _ball_detector.right_post_scan_failed = True
+        pause(1)
+        _ball_detector.right_post_scan_failed = False
+
+    return res
+    # return scan_for_cube_by_id(360, 2, annotate = False)
 #    return scan_for_marker_by_id(angle, _right_post_marker_id , use_distance_threshold=False)
 
 def distance_to_left_post():
@@ -1045,12 +1459,47 @@ def distance_to_right_post():
 
 def align_ball_and_left_post():
 #    init_post_marker_registration()
-    return align_ball_and_cube(1)
+    init_ball_detection()
+    global _ball_detector
+    _ball_detector.aligning_with_ball_and_cube = True
+    _ball_detector.align_ball_and_cube_id = 1
+    res = align_ball_and_cube(1)
+    _ball_detector.aligning_with_ball_and_cube = False
+    if res:
+        _ball_detector.aligned_with_ball_and_cube = True
+        pause(1)
+        _ball_detector.aligned_with_ball_and_cube = False
+    else:
+        _ball_detector.ball_cube_align_failed = True
+        pause(1)
+        _ball_detector.ball_cube_align_failed = False
+
+    
+
+
+    return res
+
+
+
 #    return align_ball_and_marker(_left_post_marker_id)
 
 def align_ball_and_right_post():
 #    init_post_marker_registration()
-    return align_ball_and_cube(2)
+    init_ball_detection()
+    global _ball_detector
+    _ball_detector.aligning_with_ball_and_cube = True
+    _ball_detector.align_ball_and_cube_id = 2
+    res = align_ball_and_cube(2)
+    _ball_detector.aligning_with_ball_and_cube = False
+    if res:
+        _ball_detector.aligned_with_ball_and_cube = True
+        pause(1)
+        _ball_detector.aligned_with_ball_and_cube = False
+    else:
+        _ball_detector.ball_cube_align_failed = True
+        pause(1)
+        _ball_detector.ball_cube_align_failed = False
+    return res
 #    return align_ball_and_marker(_right_post_marker_id)
 
 
