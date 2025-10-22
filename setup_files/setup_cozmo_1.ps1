@@ -70,7 +70,7 @@ if (-not (Test-Path $Step1DoneFlag)) {
 if (!(Test-Path $CozmoDir)) {
     Write-Host ">>> Cloning easy_cozmo repository !!"
     Set-Location $UserDir
-    git clone -b main https://github.com/HBJ-Backend/eazy_cozmo_ai_ball_detection.git
+    git clone https://github.com/HBJ-Backend/eazy_cozmo_ai_ball_detection.git
 }
 Set-Location $CozmoDir
 git fetch
