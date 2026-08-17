@@ -1,6 +1,6 @@
 from easy_cozmo import *
 from cozmo.util import degrees, Pose, distance_mm, speed_mmps
-from easy_cozmo.ball_detector import _align_ball_and_goal
+from easy_cozmo.themes.soccer.ball_detector import _align_ball_and_goal
 
 """
 Task: pass to nearest player
@@ -16,7 +16,7 @@ steps:
 
 
 def cozmo_program():
-    from easy_cozmo.movements import _move_head
+    from easy_cozmo.core.movements import _move_head
  #   easy_cozmo._robot.set_robot_volume(.6)
 #    move_head_looking_down()
  #   pause(1)

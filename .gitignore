@@ -34,3 +34,48 @@ trunk*
 *.pyc
 
 *tmp*
+
+# Virtual environments and local tests 
+.venv/
+venv/
+env/
+__pycache__/
+.pytest_cache/
+.vscode/
+
+
+# Answer files
+mars/
+*_solution.py
+*_answer.py
+solutions/
+
+# Local editor / tool config
+.idea/
+.claude/
+*.code-workspace
+
+# Local env and scratch files
+.env
+.env.*
+*.local
+*.bak
+*.log
+scratch/
+notes/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Packaging output
+*.egg-info/
+dist/
+
+# Camera captures and recordings from testing
+*.png
+*.jpg
+*.jpeg
+*.mp4
+!workshops/navigation/scenarios/*.png

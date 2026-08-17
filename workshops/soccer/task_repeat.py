@@ -1,5 +1,5 @@
 from easy_cozmo import *
-from cozmo.util import degrees, Pose, distance_mm, speed_mmps
+# from cozmo.util import degrees, Pose, distance_mm, speed_mmps
 def cozmo_program():
     i=0
     while i < 3:

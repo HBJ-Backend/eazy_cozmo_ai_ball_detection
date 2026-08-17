@@ -1,0 +1,25 @@
+# Packages for workshop laptops. Installed by setup_files/setup_cozmo.ps1.
+#
+# These were originally unpinned, which worked until newer releases broke
+# things. Pins and their reasons:
+#   setuptools<81  setuptools 81 dropped pkg_resources, which yolov5 imports.
+#   pillow<10      Pillow 10 dropped ImageDraw.textsize(), used by the cozmo
+#                  SDK when drawing camera annotations. Freezes the viewer.
+#   numpy<2        Stays on 1.x to match pillow<10 and the legacy SDK.
+#
+# torch is left unpinned (yolov5 pulls it in). The torch 2.6 change to
+# torch.load is handled in easy_cozmo/themes/soccer/server.py.
+#
+# cozmo is the legacy Anki/DDL SDK. It installs cozmoclad 3.4.0, which
+# setup_cozmo.ps1 then upgrades to the DDL 3.6.6 build the app expects.
+# The PyPI easy_cozmo package is deliberately not installed, since it would
+# shadow this repo's own easy_cozmo.
+
+cozmo==1.4.10
+setuptools<81
+pillow<10
+numpy<2
+scipy
+imutils
+opencv-python
+yolov5

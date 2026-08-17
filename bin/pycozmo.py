@@ -2,6 +2,7 @@
 import os
 import sys
 import string
+import subprocess
 
 
 
@@ -18,5 +19,8 @@ if __name__ == "__main__":
         else:
             f3.write(line2)
     f3.close()
-    os.system("python {path}/reindent.py {path}/tmp.py".format(path=mypath))
-    os.system("python {path}/tmp.py".format(path=mypath))
+    # sys.executable, not "python": a bare "python" gets looked up on PATH and
+    # can land on a different install that has none of the dependencies.
+    subprocess.call([sys.executable, "{path}/reindent.py".format(path=mypath),
+                     "{path}/tmp.py".format(path=mypath)])
+    subprocess.call([sys.executable, "{path}/tmp.py".format(path=mypath)])

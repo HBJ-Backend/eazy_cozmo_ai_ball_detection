@@ -1,0 +1,16 @@
+# Dependencies for the no-robot test suite.
+#
+# These are not the legacy SDK's pins (numpy==1.15.1, cozmo==1.4.4 and so on),
+# which don't build on modern Python. The no-robot tests fake the cozmo SDK at
+# import time, so cozmo is not installed here. Everything else is real, so the
+# geometry and image tests run against the actual library.
+#
+# Works on Python 3.9 through 3.12.
+
+numpy
+opencv-python-headless
+pillow
+imutils
+scipy
+pytest
+pytest-cov
