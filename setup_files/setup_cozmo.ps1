@@ -9,9 +9,22 @@
 
   Safe to re-run. Each step skips itself if the work is already done, and the
   script only reboots at the end if something changed that needs it.
+
+  Pass -NoRestart to skip the restart at the end (you still have to reboot
+  before PATH and PYTHONPATH take effect).
+
+  Everything printed is also written to a log file under %TEMP%, so you can
+  read it after the restart.
 #>
 
+param(
+    [switch]$NoRestart
+)
+
 $ErrorActionPreference = "Stop"
+
+$LogFile = "$env:TEMP\cozmo_setup_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+try { Start-Transcript -Path $LogFile | Out-Null } catch { }
 
 # ----------------------------------------------------------------------------
 # Constants
@@ -228,12 +241,23 @@ Write-Host "  - In Sublime: Tools > Build System > pycozmo, then Build (Ctrl+B).
 Write-Host "  - Connect Cozmo (iPad over USB, iTunes open, app in SDK mode)."
 Write-Host "  - For the soccer / ball tasks, double-click the 'Cozmo Ball Server'"
 Write-Host "    desktop shortcut first (leave its window open while you play)."
+Write-Host "`nFull log of this run: $LogFile"
 
-if ($RebootNeeded) {
-    Write-Host "`nA restart is required to apply PATH / PYTHONPATH and new installs."
-    Write-Host "Restarting in 15 seconds (close this window to cancel)..."
-    Start-Sleep -Seconds 15
-    Restart-Computer -Force
-} else {
+if (-not $RebootNeeded) {
     Write-Host "`nNothing changed that requires a restart."
+    try { Stop-Transcript | Out-Null } catch { }
+    return
 }
+
+Write-Host "`nA restart is required to apply PATH / PYTHONPATH and new installs."
+if ($NoRestart) {
+    Write-Host "Skipping the restart because -NoRestart was passed."
+    Write-Host "Reboot before running any workshop code."
+    try { Stop-Transcript | Out-Null } catch { }
+    return
+}
+
+# wait for the person running this to actually read the output
+Read-Host "`nRead the output above, then press Enter to restart now (or close this window to restart later)"
+try { Stop-Transcript | Out-Null } catch { }
+Restart-Computer -Force
