@@ -1,20 +1,19 @@
 <#
   Cozmoball setup for Windows workshop laptops.
 
-  HOW TO RUN (once per laptop):
-    1. Open Windows PowerShell as ADMINISTRATOR.
+  HOW TO RUN:
+    1. Open Windows PowerShell. If that account is an administrator, use
+       "Run as administrator" so the app installers do not each raise a UAC
+       prompt. Elevating the same account keeps the same profile, so the
+       per-user Python and environment variables still land in the right place.
     2. Set-ExecutionPolicy Bypass -Scope Process -Force
     3. cd to the folder containing this script.
     4. .\setup_cozmo.ps1
 
-  Safe to re-run. Each step skips itself if the work is already done, and the
-  script only reboots at the end if something changed that needs it.
+  Safe to re-run: each step skips itself if already done, and it only reboots
+  at the end if something changed that needs it.
 
-  Pass -NoRestart to skip the restart at the end (you still have to reboot
-  before PATH and PYTHONPATH take effect).
-
-  Everything printed is also written to a log file under %TEMP%, so you can
-  read it after the restart.
+  -NoRestart skips that restart. Output is also written to a log under %TEMP%.
 #>
 
 param(
@@ -42,14 +41,27 @@ $CladUrl     = "https://raw.githubusercontent.com/DDLbots/cozmo-python-sdk/refs/
 
 $RebootNeeded = $false
 
-Write-Host "=== Cozmo setup for user: $Username ===`n"
+# Python and the environment variables are per-user
+$IsAdmin = ([Security.Principal.WindowsPrincipal] `
+            [Security.Principal.WindowsIdentity]::GetCurrent()
+           ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+$CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+$ConsoleUser = (Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue).UserName
+
+if ($IsAdmin -and $ConsoleUser -and $CurrentUser -ne $ConsoleUser) {
+    throw "This window runs as '$CurrentUser' but '$ConsoleUser' is signed in. Everything would be set up for the wrong account. Sign in as the account the student will use, then run this script from there."
+}
+
+Write-Host "=== Cozmo setup for user: $Username ==="
+if ($IsAdmin) { Write-Host "    (elevated, same account)" }
+Write-Host ""
 
 # ----------------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------------
 function Update-SessionPath {
     # Reload PATH from the machine and user values so tools installed above are
-    # usable in this session without a reboot.
+    # usable in this session without a reboot
     $machine = [Environment]::GetEnvironmentVariable("Path", "Machine")
     $user    = [Environment]::GetEnvironmentVariable("Path", "User")
     $env:Path = "$machine;$user"
@@ -60,17 +72,15 @@ function Test-WingetApp([string]$id) {
     return ($out -match [regex]::Escape($id))
 }
 
-function Install-WingetApp([string]$name, [string]$id, [string]$source) {
+function Install-WingetApp([string]$name, [string]$id) {
     if (Test-WingetApp $id) {
         Write-Host ">>> $name already installed - skipping."
         return $false
     }
     Write-Host ">>> Installing $name ..."
-    if ($source) {
-        winget install --id $id -e --source $source --accept-package-agreements --accept-source-agreements
-    } else {
-        winget install --id $id -e --accept-package-agreements --accept-source-agreements
-    }
+    # --silent and --disable-interactivity keep installer windows and prompts off the screen
+    winget install --id $id -e --silent --disable-interactivity `
+                   --accept-package-agreements --accept-source-agreements
     Update-SessionPath
     return $true
 }
@@ -80,34 +90,90 @@ function Assert-LastExit([string]$what) {
 }
 
 # ----------------------------------------------------------------------------
-# 1. Apps: Sublime Text, iTunes, Git
+# 1. Apps: Sublime Text, Apple Mobile Device Support, Git
+#
+#    Apple Mobile Device Support lets the SDK reach the Cozmo app on an iPad.
 # ----------------------------------------------------------------------------
-if (Install-WingetApp "Sublime Text" "SublimeHQ.SublimeText.4") { $RebootNeeded = $true }
-if (Install-WingetApp "iTunes" "Apple.iTunes" "msstore")        { $RebootNeeded = $true }
-if (Install-WingetApp "Git" "Git.Git")                          { $RebootNeeded = $true }
+if (Install-WingetApp "Sublime Text" "SublimeHQ.SublimeText.4")                       { $RebootNeeded = $true }
+if (Install-WingetApp "Apple Mobile Device Support" "Apple.AppleMobileDeviceSupport") { $RebootNeeded = $true }
+if (Install-WingetApp "Git" "Git.Git")                                                { $RebootNeeded = $true }
 
 # ----------------------------------------------------------------------------
-# 2. Python 3.9 (the legacy Cozmo SDK requires 3.9; 3.10+ removed the asyncio
-#    'loop' argument the SDK relies on)
+# 2. Python 3.9 with a working pip
+#
+#    The legacy SDK needs 3.9 
+#    A laptop can arrive with no 3.9, a working 3.9, or a 3.9 whose pip is
+#    gone, script can handle all three
+#
 # ----------------------------------------------------------------------------
-$HavePy39 = $false
-try {
-    $v = & py -3.9 -c "import sys; print('%d.%d' % sys.version_info[:2])" 2>$null
-    if ($LASTEXITCODE -eq 0 -and $v.Trim() -eq "3.9") { $HavePy39 = $true }
-} catch { }
+function Get-Py39Path {
+    try {
+        $p = & py -3.9 -c "import sys; print(sys.executable)" 2>$null
+        if ($LASTEXITCODE -eq 0 -and $p) { return $p.Trim() }
+    } catch { }
+    return $null
+}
 
-if ($HavePy39) {
-    Write-Host ">>> Python 3.9 already installed - skipping."
+function Test-Py39Pip {
+    try {
+        & py -3.9 -m pip --version 2>$null | Out-Null
+        return ($LASTEXITCODE -eq 0)
+    } catch { }
+    return $false
+}
+
+$Py39 = Get-Py39Path
+if ($Py39) {
+    Write-Host ">>> Found Python 3.9: $Py39"
 } else {
-    Write-Host ">>> Installing Python $PyVersion ..."
-    $dst = "$env:TEMP\python-$PyVersion-amd64.exe"
+    Write-Host ">>> Installing Python $PyVersion (per-user) ..."
+    $dst   = "$env:TEMP\python-$PyVersion-amd64.exe"
+    $PyLog = "$env:TEMP\python_install_$PyVersion.log"
     Invoke-WebRequest -Uri $PyUrl -OutFile $dst
-    # Silent, all users, prepend to PATH, install the 'py' launcher for all users.
-    Start-Process -FilePath $dst -ArgumentList "/quiet InstallAllUsers=1 PrependPath=1 Include_test=0 InstallLauncherAllUsers=1" -Wait
+
+    # The installer is silent, so /log is the only record of a failure.
+    $PyArgs = "/quiet InstallAllUsers=0 PrependPath=1 Include_pip=1 Include_test=0 InstallLauncherAllUsers=0 /log `"$PyLog`""
+    $proc = Start-Process -FilePath $dst -ArgumentList $PyArgs -Wait -PassThru
+
     Remove-Item $dst -Force
+
+    # 3010 is ERROR_SUCCESS_REBOOT_REQUIRED: it installed, but Windows has
+    # files pending replacement. The one place a restart is really needed.
+    if ($proc.ExitCode -eq 3010) {
+        Write-Host "`n>>> Windows needs a restart to finish the Python install."
+        Write-Host "    Run this script again afterwards. It skips what is already"
+        Write-Host "    done and carries on from here."
+        try { Stop-Transcript | Out-Null } catch { }
+        if (-not $NoRestart) {
+            Read-Host "`nPress Enter to restart now (or close this window to restart later)"
+            Restart-Computer -Force
+        }
+        exit
+    }
+    if ($proc.ExitCode -ne 0) {
+        throw "The Python $PyVersion installer exited with code $($proc.ExitCode). Installer log: $PyLog"
+    }
+
+    # Picks up the directories the installer added to PATH.
     Update-SessionPath
     $RebootNeeded = $true
-    Write-Host ">>> Python $PyVersion installed."
+
+    $Py39 = Get-Py39Path
+    if (-not $Py39) {
+        throw "Python $PyVersion installed but 'py -3.9' still does not resolve. Restart and run this script again."
+    }
+    Write-Host ">>> Installed Python $PyVersion at $Py39"
+}
+
+# A 3.9 that runs but has no pip is what a half-finished uninstall leaves
+# behind. pip rebuilds from the stdlib, so no reinstall and no restart.
+if (-not (Test-Py39Pip)) {
+    Write-Host ">>> That Python has no pip. Restoring it with ensurepip ..."
+    try { & py -3.9 -m ensurepip --upgrade 2>$null | Out-Null } catch { }
+    if (-not (Test-Py39Pip)) {
+        throw "Python 3.9 at $Py39 has no pip and ensurepip could not restore it. Uninstall that Python from Settings > Apps, restart, then run this script again."
+    }
+    Write-Host ">>> pip restored."
 }
 
 # ----------------------------------------------------------------------------
@@ -123,14 +189,14 @@ if (-not (Test-Path $CozmoDir)) {
 Set-Location $CozmoDir
 git fetch --all
 git checkout $Branch
-# Best-effort fast-forward; never overwrite the workshop's local library files.
+# Best-effort fast-forward 
 git pull --ff-only origin $Branch
 
 # ----------------------------------------------------------------------------
 # 4. Python packages
 #    requirements-workshop.txt covers the pinned packages and the cozmo SDK.
 #    cozmoclad is then upgraded to the 3.6.6 build the app expects.
-#    Installed system-wide so every account on the laptop sees them.
+#    These land in the per-user Python from step 2.
 # ----------------------------------------------------------------------------
 $Req = "$CozmoDir\requirements-workshop.txt"
 if (-not (Test-Path $Req)) {
@@ -151,23 +217,24 @@ py -3.9 -m pip install --upgrade $wheel
 Assert-LastExit "pip install cozmoclad 3.6.6"
 Remove-Item $wheel -Force
 
-# The PyPI 'easy_cozmo' package is deliberately not installed. It is an outdated
-# stub without the soccer features, and it would shadow the repo's own copy,
-# which is picked up via the PYTHONPATH set below.
+# The PyPI 'easy_cozmo' package is deliberately not installed: it is an
+# outdated stub that would shadow the repo's own copy.
 
 # ----------------------------------------------------------------------------
 # 5. Environment variables
 #    PATH  += repo\bin   (so the pycozmo build launcher is found)
 #    PYTHONPATH = repo   (so `import easy_cozmo` loads the repo package)
+#    User scope, matching the per-user Python above.
 # ----------------------------------------------------------------------------
 $BinDir = "$CozmoDir\bin"
-$machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
-if ($machinePath -notlike "*$BinDir*") {
-    [Environment]::SetEnvironmentVariable("Path", "$machinePath;$BinDir", "Machine")
-    Write-Host ">>> Added $BinDir to system PATH."
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($userPath -notlike "*$BinDir*") {
+    $newPath = if ($userPath) { "$userPath;$BinDir" } else { $BinDir }
+    [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+    Write-Host ">>> Added $BinDir to user PATH."
     $RebootNeeded = $true
 } else {
-    Write-Host ">>> System PATH already contains $BinDir."
+    Write-Host ">>> User PATH already contains $BinDir."
 }
 
 $curPyPath = [Environment]::GetEnvironmentVariable("PYTHONPATH", "User")
@@ -206,8 +273,8 @@ URL=$ChallengeUrl
 "@ | Out-File "$Desktop\Challenge_Submission.url" -Encoding ASCII
 Write-Host ">>> Created Challenge_Submission desktop shortcut."
 
-# 7b. Ball-detection server, needed for the soccer tasks. cmd /k keeps the
-#     window open showing the log until the student closes it.
+# 7b. Ball-detection server for the soccer tasks. cmd /k keeps the log window
+#     open until the student closes it.
 $ServerScript = "$CozmoDir\easy_cozmo\themes\soccer\server.py"
 $ServerLnk    = "$Desktop\Cozmo Ball Server.lnk"
 $ws = New-Object -ComObject WScript.Shell
@@ -232,13 +299,22 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host ">>> Verification FAILED - review the errors above."
 }
 
+# Without this service the iPad is refused when plugged in.
+$amds = Get-Service "Apple Mobile Device Service" -ErrorAction SilentlyContinue
+if ($amds) {
+    Write-Host ">>> Apple Mobile Device Service present (status: $($amds.Status))."
+} else {
+    Write-Host ">>> WARNING: Apple Mobile Device Service is missing. Fix it with:"
+    Write-Host "      winget install --id Apple.AppleMobileDeviceSupport -e"
+}
+
 # ----------------------------------------------------------------------------
 # 9. Finish
 # ----------------------------------------------------------------------------
 Write-Host "`n=== Setup complete ==="
 Write-Host "Next steps:"
 Write-Host "  - In Sublime: Tools > Build System > pycozmo, then Build (Ctrl+B)."
-Write-Host "  - Connect Cozmo (iPad over USB, iTunes open, app in SDK mode)."
+Write-Host "  - Connect Cozmo (iPad over USB, app in SDK mode)."
 Write-Host "  - For the soccer / ball tasks, double-click the 'Cozmo Ball Server'"
 Write-Host "    desktop shortcut first (leave its window open while you play)."
 Write-Host "`nFull log of this run: $LogFile"

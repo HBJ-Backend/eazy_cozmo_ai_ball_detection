@@ -18,6 +18,24 @@ def test_textsize_restored_on_pillow_10_plus():
     assert hasattr(ImageDraw.ImageDraw, "textsize")
 
 
+def test_textsize_is_ours_not_pillows():
+    # We replace textsize even when Pillow still has one. Pillow 9 keeps it but
+    # deprecates it, and cozmo/annotate.py calls it once per annotated frame,
+    # so deferring to Pillow there means a DeprecationWarning per frame during
+    # a scan.
+    assert ImageDraw.ImageDraw.textsize._easy_cozmo_patched is True
+
+
+def test_textsize_emits_no_deprecation_warning():
+    import warnings
+    from PIL import Image, ImageFont
+    d = ImageDraw.Draw(Image.new("RGB", (120, 60)))
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        d.textsize("Distance 123", font=ImageFont.load_default())
+    assert [w for w in caught if issubclass(w.category, DeprecationWarning)] == []
+
+
 def test_apply_is_idempotent():
     # Calling apply() again is a harmless no-op.
     _sdk_patches.apply()

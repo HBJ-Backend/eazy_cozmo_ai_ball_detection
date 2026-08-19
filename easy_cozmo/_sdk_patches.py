@@ -36,7 +36,12 @@ def apply():
 
 
 def _patch_pillow_textsize():
-    """Restore ImageDraw.textsize(), which Pillow 10 removed.
+    """Replace ImageDraw.textsize().
+
+    cozmo/annotate.py calls it once per annotated frame. Pillow 10 removed it,
+    and Pillow 9 only deprecates it, so on 9 every frame of a scan prints a
+    DeprecationWarning. Always installing our own version covers both: the
+    method exists on Pillow 10+, and the deprecated path is never reached on 9.
 
     The SDK anchors text against a bounding box using the returned height, by
     default from the bottom (y = box_bottom - height). The old textsize()
@@ -46,8 +51,9 @@ def _patch_pillow_textsize():
     """
     from PIL import ImageDraw, ImageFont
 
-    if hasattr(ImageDraw.ImageDraw, "textsize"):
-        return  # Pillow < 10 still provides it.
+    if getattr(getattr(ImageDraw.ImageDraw, "textsize", None),
+               "_easy_cozmo_patched", False):
+        return
 
     def textsize(self, text, font=None, *args, **kwargs):
         try:
@@ -69,6 +75,7 @@ def _patch_pillow_textsize():
             width = right - left
         return width, height
 
+    textsize._easy_cozmo_patched = True
     ImageDraw.ImageDraw.textsize = textsize
 
 
