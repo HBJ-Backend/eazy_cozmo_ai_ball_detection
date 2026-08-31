@@ -47,6 +47,8 @@ SUBMODULES = [
     "easy_cozmo.themes.line_following",
     "easy_cozmo.themes.line_following.line_detector",
     "easy_cozmo.themes.line_following.line_detection_utils",
+    "easy_cozmo.themes.mars",
+    "easy_cozmo.themes.mars.wrappers",
 ]
 
 # Public functions that must remain exposed on the flat namespace, by area.
@@ -116,6 +118,14 @@ PUBLIC_API = {
     "line_following": [
         "initialize_line_detector", "get_detected_line_angle",
         "is_line_detected", "init_line_detection",
+    ],
+    "mars": [
+        "send_message", "receive_message", "report_status", "raise_alert",
+        "scan_for_ice_sample", "scan_for_debris", "scan_for_rock_sample",
+        "pickup_sample", "pickup_ice_sample", "drop_sample",
+        "store_sample_in_freezer", "align_with_path_marker",
+        "beep", "scan_for_crew", "greet_crew_member", "follow_astronaut",
+        "wait_for_go_signal",
     ],
     "cv": ["region_of_interest"],
 }

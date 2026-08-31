@@ -132,6 +132,17 @@ def install_fake_cozmo():
     # the same object on every access, allowing identity assertions in tests.
     anim.Triggers = MagicMock(name="anim.Triggers")
 
+    audio = _AutoModule("cozmo.audio")
+    # Same idea for AudioEvents, so beep assertions can compare identity.
+    audio.AudioEvents = MagicMock(name="audio.AudioEvents")
+
+    song = _AutoModule("cozmo.song")
+    # Stable too: _AutoModule hands back a NEW mock on every attribute access,
+    # so NoteTypes.C3 would not equal itself between calls.
+    song.NoteTypes = MagicMock(name="song.NoteTypes")
+    song.NoteDurations = MagicMock(name="song.NoteDurations")
+    song.SongNote = MagicMock(name="song.SongNote")
+
     cozmo.util = util
     cozmo.objects = objects
     cozmo.annotate = annotate
@@ -139,6 +150,8 @@ def install_fake_cozmo():
     cozmo.world = world
     cozmo.faces = faces
     cozmo.anim = anim
+    cozmo.audio = audio
+    cozmo.song = song
 
     sys.modules["cozmo"] = cozmo
     sys.modules["cozmo.util"] = util
@@ -148,6 +161,8 @@ def install_fake_cozmo():
     sys.modules["cozmo.world"] = world
     sys.modules["cozmo.faces"] = faces
     sys.modules["cozmo.anim"] = anim
+    sys.modules["cozmo.audio"] = audio
+    sys.modules["cozmo.song"] = song
 
 
 # --- Fake robot / actions / cubes --------------------------------------------
@@ -174,6 +189,7 @@ _ACTION_METHODS = (
     "pickup_object",
     "place_on_object",
     "say_text",
+    "play_song",
 )
 
 

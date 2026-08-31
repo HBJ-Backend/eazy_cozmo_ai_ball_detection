@@ -44,8 +44,9 @@ __pycache__/
 .vscode/
 
 
-# Answer files
-mars/
+# Answer files. Anchored to workshops/ so it does not also swallow the
+# easy_cozmo/themes/mars/ library code.
+workshops/mars/
 *_solution.py
 *_answer.py
 solutions/

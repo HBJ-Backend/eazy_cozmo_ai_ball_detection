@@ -299,13 +299,28 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host ">>> Verification FAILED - review the errors above."
 }
 
-# Without this service the iPad is refused when plugged in.
+# The SDK reaches the iPad through usbmuxd, which on Windows is the Apple
+# Mobile Device Service listening on 127.0.0.1:27015. Checking the port rather
+# than just the service, because a registered but stopped service still fails
+# with "[WinError 1225] The remote computer refused the network connection".
 $amds = Get-Service "Apple Mobile Device Service" -ErrorAction SilentlyContinue
-if ($amds) {
-    Write-Host ">>> Apple Mobile Device Service present (status: $($amds.Status))."
-} else {
-    Write-Host ">>> WARNING: Apple Mobile Device Service is missing. Fix it with:"
+if (-not $amds) {
+    Write-Host ">>> WARNING: Apple Mobile Device Service is missing. Install it with:"
     Write-Host "      winget install --id Apple.AppleMobileDeviceSupport -e"
+} else {
+    Write-Host ">>> Apple Mobile Device Service: $($amds.Status), start type $($amds.StartType)."
+    $mux = Get-NetTCPConnection -LocalPort 27015 -State Listen -ErrorAction SilentlyContinue
+    if ($mux) {
+        Write-Host ">>> usbmuxd is listening on 127.0.0.1:27015."
+    } else {
+        Write-Host ">>> WARNING: nothing is listening on 127.0.0.1:27015, so the SDK"
+        Write-Host "    cannot reach the iPad. In an elevated PowerShell run:"
+        Write-Host "      Start-Service 'Apple Mobile Device Service'"
+        Write-Host "      Set-Service 'Apple Mobile Device Service' -StartupType Automatic"
+        Write-Host "    A restart usually fixes it too. If the service runs and the port"
+        Write-Host "    is still closed, install iTunes for a full usbmuxd:"
+        Write-Host "      winget install --id Apple.iTunes -e"
+    }
 }
 
 # ----------------------------------------------------------------------------
