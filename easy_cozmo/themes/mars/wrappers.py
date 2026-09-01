@@ -1,9 +1,7 @@
 """Mars workshop vocabulary.
 
 Thin renames over the core library so the exercises read like a mission log
-instead of a cube-and-face API. Each wrapper maps to one existing function, so
-students still write the loops and if-statements the exercises are there to
-teach.
+instead of a cube-and-face API.
 """
 
 import cozmo
@@ -134,12 +132,11 @@ def store_sample_in_freezer():
     return place_on_top(FREEZER)
 
 
+def scan_for_flag(angle, scan_speed=df_scan_cube_speed):
+    return scan_for_cube_by_id(angle, PATH_MARKER, scan_speed=scan_speed)
+
 def align_with_flag(distance=df_align_distance):
-    if scan_for_cube_by_id(360, 3):
-        return align_with_cube_by_id(PATH_MARKER, distance)
-    else:
-        say("Error, can't find flag")
-        return
+    return align_with_cube_by_id(PATH_MARKER, distance)
 
 
 # ---------------------------------------------------------------------------
@@ -164,7 +161,7 @@ def wait_for_go_signal(waiting_time):
 # Other
 # ---------------------------------------------------------------------------
 
-def recieve_task():
+def receive_task():
     task_id = random.randint(1,5)
     _signal(cozmo.lights.green_light, BEEP_OK)
     say("Code " + str(task_id))

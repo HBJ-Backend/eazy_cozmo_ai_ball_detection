@@ -30,11 +30,15 @@ try { Start-Transcript -Path $LogFile | Out-Null } catch { }
 # ----------------------------------------------------------------------------
 $Username    = $env:USERNAME
 $UserDir     = "C:\Users\$Username"
-$CozmoDir    = "$UserDir\eazy_cozmo_ai_ball_detection"
+$RepoName    = "mindcraft_cozmo_library"
+$CozmoDir    = "$UserDir\$RepoName"
 $Desktop     = [Environment]::GetFolderPath("Desktop")
-$RepoUrl     = "https://github.com/HBJ-Backend/eazy_cozmo_ai_ball_detection.git"
-# TODO: set back to "main" once this branch is merged.
+$RepoUrl     = "https://github.com/HBJ-Backend/$RepoName.git"
+# The workshop runs from this branch, not main.
 $Branch      = "clean-up"
+# Folder left behind by laptops set up before the repo was renamed. Removed
+# below, along with the PATH entry pointing into it.
+$OldCozmoDir = "$UserDir\eazy_cozmo_ai_ball_detection"
 $PyVersion   = "3.9.4"
 $PyUrl       = "https://www.python.org/ftp/python/$PyVersion/python-$PyVersion-amd64.exe"
 $CladUrl     = "https://raw.githubusercontent.com/DDLbots/cozmo-python-sdk/refs/heads/master/cozmoclad/cozmoclad-3.6.6-py3-none-any.whl"
@@ -87,6 +91,26 @@ function Install-WingetApp([string]$name, [string]$id) {
 
 function Assert-LastExit([string]$what) {
     if ($LASTEXITCODE -ne 0) { throw "$what failed (exit code $LASTEXITCODE)." }
+}
+
+function Find-Chrome {
+    # Registered location first, then the two default install paths.
+    $key = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe"
+    $fromReg = (Get-ItemProperty $key -ErrorAction SilentlyContinue).'(default)'
+    if ($fromReg -and (Test-Path $fromReg)) { return $fromReg }
+    foreach ($p in @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+                     "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+                     "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe")) {
+        if (Test-Path $p) { return $p }
+    }
+    return $null
+}
+
+$Chrome = Find-Chrome
+if ($Chrome) {
+    Write-Host ">>> Chrome found: $Chrome"
+} else {
+    Write-Host ">>> Chrome not installed - shortcuts will use the default browser."
 }
 
 # ----------------------------------------------------------------------------
@@ -178,7 +202,18 @@ if (-not (Test-Py39Pip)) {
 
 # ----------------------------------------------------------------------------
 # 3. Repo (clone if missing, otherwise update)
+#
+#    A laptop set up before the rename has the old folder as well. It is a
+#    plain clone with nothing local worth keeping, and leaving it behind would
+#    mean two copies of the library and a stale PATH entry that wins over the
+#    new one, so remove it.
 # ----------------------------------------------------------------------------
+if (Test-Path $OldCozmoDir) {
+    Write-Host ">>> Found the pre-rename folder $OldCozmoDir - removing it ..."
+    Remove-Item $OldCozmoDir -Recurse -Force
+    $RebootNeeded = $true
+}
+
 if (-not (Test-Path $CozmoDir)) {
     Write-Host ">>> Cloning repository ..."
     git clone $RepoUrl $CozmoDir
@@ -226,15 +261,25 @@ Remove-Item $wheel -Force
 #    PYTHONPATH = repo   (so `import easy_cozmo` loads the repo package)
 #    User scope, matching the per-user Python above.
 # ----------------------------------------------------------------------------
-$BinDir = "$CozmoDir\bin"
+$BinDir    = "$CozmoDir\bin"
+$OldBinDir = "$OldCozmoDir\bin"
+
+# Rebuild rather than append. A laptop set up before the rename still has the
+# old bin on PATH, and because it was added first it would win the lookup for
+# pycozmo.bat and run the deleted copy of the library.
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if ($userPath -notlike "*$BinDir*") {
-    $newPath = if ($userPath) { "$userPath;$BinDir" } else { $BinDir }
+$kept = @($userPath -split ';' | Where-Object {
+    $_ -and $_.TrimEnd('\') -ne $BinDir.TrimEnd('\') `
+         -and $_.TrimEnd('\') -ne $OldBinDir.TrimEnd('\')
+})
+$newPath = ($kept + $BinDir) -join ';'
+
+if ($newPath -ne $userPath) {
     [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
-    Write-Host ">>> Added $BinDir to user PATH."
+    Write-Host ">>> User PATH now ends with $BinDir."
     $RebootNeeded = $true
 } else {
-    Write-Host ">>> User PATH already contains $BinDir."
+    Write-Host ">>> User PATH already correct."
 }
 
 $curPyPath = [Environment]::GetEnvironmentVariable("PYTHONPATH", "User")
@@ -265,19 +310,51 @@ if (Test-Path $SourceBuild) {
 # ----------------------------------------------------------------------------
 # 7. Desktop shortcuts
 # ----------------------------------------------------------------------------
-# 7a. Challenge submission link.
-$ChallengeUrl = "https://forms.gle/RGU69596cgwWEdKC7"
-@"
+# 7a. Web links. Both carry hl=en so Google shows them in English whatever the
+#     laptop's region is set to.
+#
+#     Note the form uses its expanded URL rather than the forms.gle short link:
+#     that short link drops query parameters when it redirects, so hl would be
+#     thrown away. Drive links keep theirs, so those need no expanding.
+$ws = New-Object -ComObject WScript.Shell
+
+function New-BrowserShortcut([string]$name, [string]$url, [string]$description) {
+    $lnk     = "$Desktop\$name.lnk"
+    $urlFile = "$Desktop\$name.url"
+    if ($Chrome) {
+        # A .url shortcut always opens in the default browser, which is the one
+        # thing a script cannot set. Targeting chrome.exe is what actually
+        # guarantees every student lands in the same browser.
+        Remove-Item $urlFile -Force -ErrorAction SilentlyContinue
+        $sc = $ws.CreateShortcut($lnk)
+        $sc.TargetPath   = $Chrome
+        $sc.Arguments    = "`"$url`""
+        $sc.IconLocation = "$Chrome,0"
+        $sc.Description  = $description
+        $sc.Save()
+        Write-Host ">>> Created '$name' shortcut (opens in Chrome)."
+    } else {
+        Remove-Item $lnk -Force -ErrorAction SilentlyContinue
+        @"
 [InternetShortcut]
-URL=$ChallengeUrl
-"@ | Out-File "$Desktop\Challenge_Submission.url" -Encoding ASCII
-Write-Host ">>> Created Challenge_Submission desktop shortcut."
+URL=$url
+"@ | Out-File $urlFile -Encoding ASCII
+        Write-Host ">>> Created '$name' shortcut (default browser)."
+    }
+}
+
+New-BrowserShortcut "Challenge_Submission" `
+    "https://docs.google.com/forms/d/e/1FAIpQLSc-GV3oKHZ9FXH7rmP04t2yzX2oRJkOX1KsZuoKQCOizJ59rg/viewform?usp=send_form&hl=en" `
+    "Submit your challenge."
+
+New-BrowserShortcut "Future Coders Student Handouts" `
+    "https://drive.google.com/drive/folders/12DbUmUhiCtGdiJe0SUT28CqIXIAHF4GS?usp=drive_link&hl=en" `
+    "Workshop handouts on Google Drive."
 
 # 7b. Ball-detection server for the soccer tasks. cmd /k keeps the log window
 #     open until the student closes it.
 $ServerScript = "$CozmoDir\easy_cozmo\themes\soccer\server.py"
 $ServerLnk    = "$Desktop\Cozmo Ball Server.lnk"
-$ws = New-Object -ComObject WScript.Shell
 $sc = $ws.CreateShortcut($ServerLnk)
 $sc.TargetPath       = "$env:WINDIR\System32\cmd.exe"
 $sc.Arguments        = "/k py -3.9 `"$ServerScript`""
@@ -288,7 +365,81 @@ $sc.Save()
 Write-Host ">>> Created 'Cozmo Ball Server' desktop shortcut."
 
 # ----------------------------------------------------------------------------
-# 8. Verify the install
+# 8. Laptop consistency: clock and wallpaper
+# ----------------------------------------------------------------------------
+# 8a. Automatic date, time and time zone. Needs admin, so it is skipped on a
+#     non-elevated run rather than failing the whole script.
+#     Automatic time zone (tzautoupdate) will not work unless location access
+#     is allowed, which is why that comes first.
+if ($IsAdmin) {
+    try {
+        $loc = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location"
+        if (-not (Test-Path $loc)) { New-Item -Path $loc -Force | Out-Null }
+        Set-ItemProperty -Path $loc -Name "Value" -Value "Allow"
+        Write-Host ">>> Location access allowed (needed for automatic time zone)."
+
+        Set-Service tzautoupdate -StartupType Automatic
+        Start-Service tzautoupdate -ErrorAction SilentlyContinue
+        Write-Host ">>> Automatic time zone enabled."
+
+        Set-Service w32time -StartupType Automatic
+        Start-Service w32time -ErrorAction SilentlyContinue
+        & w32tm /resync 2>$null | Out-Null
+        Write-Host ">>> Time sync enabled; clock resynced. Now: $(Get-Date -Format 'yyyy-MM-dd HH:mm') ($((Get-TimeZone).Id))"
+    } catch {
+        Write-Host ">>> WARNING: could not set the clock automatically: $($_.Exception.Message)"
+    }
+} else {
+    Write-Host ">>> Skipping clock settings (needs an elevated run)."
+}
+
+# 8b. Desktop wallpaper. Looked for next to this script and on the Desktop, so
+#     it can be carried in on the same USB stick. Copied into the profile first
+#     so the wallpaper survives the stick being removed.
+$WallpaperNames = @("wallpaper.jpg", "wallpaper.jpeg", "wallpaper.png")
+$WallpaperSrc = $null
+foreach ($dir in @($PSScriptRoot, $Desktop)) {
+    if (-not $dir) { continue }
+    foreach ($name in $WallpaperNames) {
+        $candidate = Join-Path $dir $name
+        if (Test-Path $candidate) { $WallpaperSrc = $candidate; break }
+    }
+    if ($WallpaperSrc) { break }
+}
+
+if ($WallpaperSrc) {
+    $PicturesDir = "$UserDir\Pictures"
+    if (-not (Test-Path $PicturesDir)) { New-Item -ItemType Directory -Path $PicturesDir -Force | Out-Null }
+    $WallpaperDst = Join-Path $PicturesDir ("cozmo_wallpaper" + [System.IO.Path]::GetExtension($WallpaperSrc))
+    Copy-Item $WallpaperSrc $WallpaperDst -Force
+
+    if (-not ("CozmoWallpaper.Setter" -as [type])) {
+        Add-Type -TypeDefinition @'
+using System.Runtime.InteropServices;
+namespace CozmoWallpaper {
+    public class Setter {
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+        public static void Apply(string path) {
+            // SPI_SETDESKWALLPAPER, SPIF_UPDATEINIFILE | SPIF_SENDWININICHANGE
+            SystemParametersInfo(20, 0, path, 0x01 | 0x02);
+        }
+    }
+}
+'@
+    }
+    # 10 = fill, 0 = do not tile.
+    Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name WallpaperStyle -Value "10"
+    Set-ItemProperty "HKCU:\Control Panel\Desktop" -Name TileWallpaper  -Value "0"
+    [CozmoWallpaper.Setter]::Apply($WallpaperDst)
+    Write-Host ">>> Wallpaper set from $WallpaperSrc"
+} else {
+    Write-Host ">>> No wallpaper found. Put wallpaper.jpg (or .png) next to this"
+    Write-Host "    script or on the Desktop and re-run to set it."
+}
+
+# ----------------------------------------------------------------------------
+# 9. Verify the install
 # ----------------------------------------------------------------------------
 Write-Host ">>> Verifying the install ..."
 $env:PYTHONPATH = $CozmoDir
@@ -324,7 +475,7 @@ if (-not $amds) {
 }
 
 # ----------------------------------------------------------------------------
-# 9. Finish
+# 10. Finish
 # ----------------------------------------------------------------------------
 Write-Host "`n=== Setup complete ==="
 Write-Host "Next steps:"
@@ -332,6 +483,14 @@ Write-Host "  - In Sublime: Tools > Build System > pycozmo, then Build (Ctrl+B).
 Write-Host "  - Connect Cozmo (iPad over USB, app in SDK mode)."
 Write-Host "  - For the soccer / ball tasks, double-click the 'Cozmo Ball Server'"
 Write-Host "    desktop shortcut first (leave its window open while you play)."
+if ($Chrome) {
+    # Windows will not let a script set the default browser: the UserChoice
+    # registry value is signed with a per-user hash that only the Settings UI
+    # can produce. This opens the right page so it is one click, not a hunt.
+    Write-Host "  - To make Chrome the system default, run this and click 'Set default':"
+    Write-Host "      start ms-settings:defaultapps?registeredAppUser=Google%20Chrome"
+    Write-Host "    The desktop shortcuts already open in Chrome either way."
+}
 Write-Host "`nFull log of this run: $LogFile"
 
 if (-not $RebootNeeded) {

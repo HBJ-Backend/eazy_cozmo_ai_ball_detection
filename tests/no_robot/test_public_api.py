@@ -49,6 +49,8 @@ SUBMODULES = [
     "easy_cozmo.themes.line_following.line_detection_utils",
     "easy_cozmo.themes.mars",
     "easy_cozmo.themes.mars.wrappers",
+    "easy_cozmo.themes.sustainability",
+    "easy_cozmo.themes.sustainability.wrappers",
 ]
 
 # Public functions that must remain exposed on the flat namespace, by area.
@@ -121,11 +123,22 @@ PUBLIC_API = {
     ],
     "mars": [
         "send_message", "receive_message", "report_status", "raise_alert",
-        "scan_for_ice_sample", "scan_for_debris", "scan_for_rock_sample",
-        "pickup_sample", "pickup_ice_sample", "drop_sample",
-        "store_sample_in_freezer", "align_with_path_marker",
-        "beep", "scan_for_crew", "greet_crew_member", "follow_astronaut",
+        "beep", "receive_task",
+        "scan_for_ice_sample", "scan_for_freezer", "scan_for_debris",
+        "scan_for_rock_sample",
+        "pickup_sample", "pickup_debris", "pickup_ice_sample",
+        "drop_sample", "drop_debris",
+        "store_sample_in_freezer", "align_with_flag",
+        "scan_for_crew", "greet_crew_member", "follow_astronaut",
         "wait_for_go_signal",
+    ],
+    "sustainability": [
+        "scan_for_turbine_oil", "align_with_turbine_oil",
+        "scan_for_sheep_wool", "align_with_sheep_wool",
+        "scan_for_crop_residue", "align_with_crop_residue",
+        "scan_for_tree", "align_with_tree",
+        "scan_for_fruit_crate", "align_with_fruit_crate",
+        "scan_for_signpost", "align_with_signpost",
     ],
     "cv": ["region_of_interest"],
 }

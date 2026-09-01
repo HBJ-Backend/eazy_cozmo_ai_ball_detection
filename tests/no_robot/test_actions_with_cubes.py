@@ -103,3 +103,19 @@ def test_place_on_top_aborts_and_returns_false_on_failure(make_robot):
     action = robot.place_on_object.return_value
     assert easy_cozmo.place_on_top(1) is False
     action.abort.assert_called_once()
+
+
+def test_scan_for_cube_levels_the_head_before_turning(robot):
+    # The head is only set once, in initialize_robot. Anything that moved it
+    # since (move_head_looking_up for faces, the ball routines) would leave a
+    # scan looking over the cubes.
+    easy_cozmo.scan_for_cube(90)
+    assert robot.set_head_angle.called
+    assert robot.set_head_angle.call_args[0][0] == sdk_fakes.Q("degrees", 0)
+
+
+def test_scan_for_cube_by_id_levels_the_head_too(robot):
+    # Separate code path from scan_for_cube, and the one the mars wrappers use.
+    easy_cozmo.scan_for_cube_by_id(90, 1)
+    assert robot.set_head_angle.called
+    assert robot.set_head_angle.call_args[0][0] == sdk_fakes.Q("degrees", 0)

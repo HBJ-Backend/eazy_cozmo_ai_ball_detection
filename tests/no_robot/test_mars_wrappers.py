@@ -53,12 +53,14 @@ def test_beeps_go_through_play_song_not_play_audio(robot):
 
 
 def test_send_and_receive_use_different_beeps(robot):
+    # Compare the note tuples, not their lengths: two different motifs can be
+    # the same number of notes.
+    assert wrappers.BEEP_SEND != wrappers.BEEP_RECEIVE
+
     easy_cozmo.send_message("a")
-    sent = len(robot.play_song.call_args[0][0])
-    easy_cozmo.receive_message("b")
-    received = len(robot.play_song.call_args[0][0])
-    assert (sent, received) == (len(wrappers.BEEP_SEND), len(wrappers.BEEP_RECEIVE))
-    assert sent != received
+    assert len(robot.play_song.call_args[0][0]) == len(wrappers.BEEP_SEND)
+    easy_cozmo.receive_message()
+    assert len(robot.play_song.call_args[0][0]) == len(wrappers.BEEP_RECEIVE)
 
 
 def test_beep_plays_once_per_repeat_and_says_nothing(robot):
@@ -67,9 +69,9 @@ def test_beep_plays_once_per_repeat_and_says_nothing(robot):
     robot.say_text.assert_not_called()
 
 
-def test_receive_message_has_a_default_text(robot):
+def test_receive_message_speaks_a_fixed_line(robot):
     easy_cozmo.receive_message()
-    assert robot.say_text.call_args[0][0] == "Message received: signal received"
+    assert robot.say_text.call_args[0][0] == "Message received"
 
 
 def test_report_status_and_alert_prefix_their_text(robot):

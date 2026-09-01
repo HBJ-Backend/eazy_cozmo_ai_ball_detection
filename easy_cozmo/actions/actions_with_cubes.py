@@ -104,6 +104,11 @@ def scan_for_cube(angle, scan_speed=df_scan_cube_speed):
 
         """
 
+        # Level the head first. It is only set once, in initialize_robot, so
+        # anything that moved it since (move_head_looking_up for faces, the
+        # ball routines) would leave this scan looking over the cubes.
+        move_head_looking_forward()
+
         if not _scan_for_object(angle, valid_object_check=_is_cube, scan_speed=scan_speed):
                 _say_error("I couldn't find a cube, sorry")
                 return False
@@ -200,6 +205,9 @@ def scan_for_cube_by_id(angle, cube_id, scan_speed=df_scan_cube_speed, annotate 
                 robot.world.image_annotator.add_annotator('scan', scan_anno)
         except:
                 pass 
+
+        # Level the head first, same reason as in scan_for_cube.
+        move_head_looking_forward()
 
         def check_cube_id(obj):
                 return _is_cube(obj) and obj.cube_id == cube_id
