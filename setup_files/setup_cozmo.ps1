@@ -106,21 +106,36 @@ function Find-Chrome {
     return $null
 }
 
-$Chrome = Find-Chrome
-if ($Chrome) {
-    Write-Host ">>> Chrome found: $Chrome"
-} else {
-    Write-Host ">>> Chrome not installed - shortcuts will use the default browser."
-}
-
 # ----------------------------------------------------------------------------
-# 1. Apps: Sublime Text, Apple Mobile Device Support, Git
+# 1. Apps: Sublime Text, Google Chrome, Apple Mobile Device Support, Git
 #
 #    Apple Mobile Device Support lets the SDK reach the Cozmo app on an iPad.
+#    Chrome is installed so every laptop has the same browser and the web
+#    shortcuts below can target it directly.
 # ----------------------------------------------------------------------------
 if (Install-WingetApp "Sublime Text" "SublimeHQ.SublimeText.4")                       { $RebootNeeded = $true }
 if (Install-WingetApp "Apple Mobile Device Support" "Apple.AppleMobileDeviceSupport") { $RebootNeeded = $true }
 if (Install-WingetApp "Git" "Git.Git")                                                { $RebootNeeded = $true }
+
+# Chrome is checked on disk rather than through winget list, because a copy
+# installed outside winget still needs finding: the shortcuts need its path.
+$Chrome = Find-Chrome
+if ($Chrome) {
+    Write-Host ">>> Chrome already installed: $Chrome"
+} else {
+    Write-Host ">>> Installing Google Chrome ..."
+    winget install --id Google.Chrome -e --silent --disable-interactivity `
+                   --accept-package-agreements --accept-source-agreements
+    Update-SessionPath
+    $RebootNeeded = $true
+    $Chrome = Find-Chrome
+    if ($Chrome) {
+        Write-Host ">>> Chrome installed: $Chrome"
+    } else {
+        Write-Host ">>> WARNING: Chrome install did not produce chrome.exe."
+        Write-Host "    Shortcuts will fall back to the default browser."
+    }
+}
 
 # ----------------------------------------------------------------------------
 # 2. Python 3.9 with a working pip
@@ -318,6 +333,27 @@ if (Test-Path $SourceBuild) {
 #     thrown away. Drive links keep theirs, so those need no expanding.
 $ws = New-Object -ComObject WScript.Shell
 
+# chrome.exe carries several icons. Index 0 is the usual multicolour logo and
+# index 4 is the yellow one, which makes the workshop shortcuts stand out from
+# Chrome itself on the taskbar and desktop. Falls back to 0 if a future Chrome
+# ships fewer icons than that.
+$ChromeIconIndex = 4
+if ($Chrome) {
+    try {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public class CozmoIconCount {
+    [DllImport("shell32.dll", CharSet = CharSet.Auto)]
+    public static extern int ExtractIconEx(string f, int i, IntPtr[] l, IntPtr[] s, int n);
+}
+'@ -ErrorAction SilentlyContinue
+        if ([CozmoIconCount]::ExtractIconEx($Chrome, -1, $null, $null, 0) -le $ChromeIconIndex) {
+            $ChromeIconIndex = 0
+        }
+    } catch { $ChromeIconIndex = 0 }
+}
+
 function New-BrowserShortcut([string]$name, [string]$url, [string]$description) {
     $lnk     = "$Desktop\$name.lnk"
     $urlFile = "$Desktop\$name.url"
@@ -329,7 +365,7 @@ function New-BrowserShortcut([string]$name, [string]$url, [string]$description) 
         $sc = $ws.CreateShortcut($lnk)
         $sc.TargetPath   = $Chrome
         $sc.Arguments    = "`"$url`""
-        $sc.IconLocation = "$Chrome,0"
+        $sc.IconLocation = "$Chrome,$ChromeIconIndex"
         $sc.Description  = $description
         $sc.Save()
         Write-Host ">>> Created '$name' shortcut (opens in Chrome)."
