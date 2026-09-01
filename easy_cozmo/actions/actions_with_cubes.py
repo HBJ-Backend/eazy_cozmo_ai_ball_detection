@@ -612,6 +612,13 @@ def center_cube(cube_id):
         return ret
 
 def distance_to_cube(cube_id):
+        """**Distance from Cozmo to a cube, in centimeters**
+
+        :param cube_id: Id of the cube, either 1, 2, or 3
+        :type cube_id: int
+
+        :return: distance in cm, or False if the cube cannot be located
+        """
         global calculating_dist, scan_id, found_dist, dist_failed
         robot = easy_cozmo._robot
         calculating_dist = True
@@ -648,4 +655,6 @@ def distance_to_cube(cube_id):
         pause(1)
         found_dist = False
 
-        return dst
+        # Poses are in mm, but everything students touch is in cm
+        # (move_forward, align distances), so report cm.
+        return dst / 10.0

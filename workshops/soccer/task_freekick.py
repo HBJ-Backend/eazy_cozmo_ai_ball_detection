@@ -1,8 +1,9 @@
 from easy_cozmo import *
 from cozmo.util import degrees, Pose, distance_mm, speed_mmps
 
-g = 300
-delta = 50
+# cm, to match distance_to_left_post / distance_to_right_post and move_backward
+g = 30
+delta = 5
 
 def angle_to_rot(x1,x2, delta):
     print("x1=",x1," x2=",x2," delta",delta)
@@ -24,7 +25,7 @@ def cozmo_program():
             print("d1 = ", d1)
             if scan_for_ball(360):
                 if align_with_ball():
-                    move_backward(delta/10)
+                    move_backward(delta)
                     if scan_for_right_post(360):
                         d2 = distance_to_right_post()
                         print("d2 = ", d2)

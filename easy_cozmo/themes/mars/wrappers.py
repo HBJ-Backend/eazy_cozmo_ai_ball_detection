@@ -13,6 +13,7 @@ from ...core.defaults import (df_align_distance, df_scan_cube_speed,
 from ...core.robot_utils import disable_head_light, enable_head_light, pause
 from ...core.say import say
 from ...actions.actions_with_cubes import (align_with_cube_by_id,
+                                           align_with_nearest_cube,
                                            distance_to_cube, drop_cube,
                                            pickup_cube, pickup_cube_by_id,
                                            place_on_top, scan_for_cube,
@@ -101,42 +102,54 @@ def scan_for_ice_sample(angle, scan_speed=df_scan_cube_speed):
 def scan_for_freezer(angle, scan_speed=df_scan_cube_speed):
     return scan_for_cube_by_id(angle, FREEZER, scan_speed=scan_speed)
 
-
 def scan_for_debris(angle, scan_speed=df_scan_cube_speed):
     return scan_for_cube(angle, scan_speed=scan_speed)
-
 
 def scan_for_rock_sample(angle, scan_speed=df_scan_cube_speed):
     return scan_for_cube(angle, scan_speed=scan_speed)
 
+def scan_for_flag(angle, scan_speed=df_scan_cube_speed):
+    return scan_for_cube_by_id(angle, PATH_MARKER, scan_speed=scan_speed)
 
-def pickup_sample():
+
+def align_with_ice_sample(distance=df_align_distance):
+    return align_with_cube_by_id(ICE_SAMPLE, distance)
+
+def align_with_freezer(distance=df_align_distance):
+    return align_with_cube_by_id(FREEZER, distance)
+
+def align_with_debris(distance=df_align_distance):
+    return align_with_nearest_cube(distance)
+
+def align_with_rock_sample(distance=df_align_distance):
+    return align_with_nearest_cube(distance)
+
+def align_with_flag(distance=df_align_distance):
+    return align_with_cube_by_id(PATH_MARKER, distance)
+
+
+def pickup_ice_sample():
+    return pickup_cube_by_id(ICE_SAMPLE)
+
+def pickup_rock_sample():
     return pickup_cube()
 
 def pickup_debris():
     return pickup_cube()
 
 
-def pickup_ice_sample():
-    return pickup_cube_by_id(ICE_SAMPLE)
+def drop_ice_sample():
+    return drop_cube()
 
-
-def drop_sample():
+def drop_rock_sample():
     return drop_cube()
 
 def drop_debris():
     return drop_cube()
 
-
 def store_sample_in_freezer():
     return place_on_top(FREEZER)
 
-
-def scan_for_flag(angle, scan_speed=df_scan_cube_speed):
-    return scan_for_cube_by_id(angle, PATH_MARKER, scan_speed=scan_speed)
-
-def align_with_flag(distance=df_align_distance):
-    return align_with_cube_by_id(PATH_MARKER, distance)
 
 
 # ---------------------------------------------------------------------------
